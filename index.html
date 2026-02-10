@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Future Web - 3D Activity</title>
+    <style>
+        :root {
+            --bg: #050507;
+            --accent: #00ffa3;
+            --accent-glow: rgba(0, 255, 163, 0.4);
+            --text: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 3D 공간 설정 */
+            perspective: 1200px; 
+        }
+
+        /* 1. 역동적인 그리드 배경 */
+        .grid-bg {
+            position: absolute;
+            width: 200%; height: 200%;
+            top: -50%; left: -50%;
+            background-image: 
+                linear-gradient(var(--accent-glow) 1px, transparent 1px),
+                linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg);
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+            opacity: 0.2;
+        }
+
+        @keyframes gridMove {
+            from { background-position: 0 0; }
+            to { background-position: 0 1000px; }
+        }
+
+        /* 2. 배경 별 입자 레이어 */
+        .background-container {
+            position: absolute;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            transform-style: preserve-3d;
+        }
+
+        .dot {
+            position: absolute;
+            width: 3px; height: 3px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fff;
+            opacity: 0.6;
+        }
+
+        /* 3. 돌아다니는 네온 별 */
+        #clickable-star {
+            position: fixed;
+            z-index: 9999;
+            width: 70px; height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            font-size: 60px;
+            color: var(--accent);
+            text-shadow: 0 0 30px var(--accent);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            user-select: none;
+        }
+
+        #clickable-star:hover {
+            transform: scale(1.4) rotate(15deg);
+            filter: brightness(1.5);
+        }
+
+        /* 4. 3D 타이틀 래퍼 */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+            /* 마우스에 반응할 3D 효과 */
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+
+        .huge-title {
+            font-size: clamp(4rem, 18vw, 12rem);
+            font-weight: 900;
+            line-height: 0.8;
+            margin: 0;
+            text-transform: uppercase;
+            color: white;
+            /* 텍스트 깊이감 효과 */
+            text-shadow: 
+                0 1px 0 #ccc, 0 2px 0 #c5c5c5, 0 3px 0 #bbb,
+                0 10px 20px rgba(0,0,0,0.5);
+            transform: translateZ(50px); /* 텍스트가 공중에 뜬 느낌 */
+        }
+
+        .ai-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border: 2px solid var(--accent);
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 30px;
+            background: rgba(0, 255, 163, 0.05);
+            box-shadow: 0 0 15px var(--accent-glow);
+            letter-spacing: 2px;
+            transform: translateZ(30px);
+        }
+
+        /* 마우스 오버 시 가이드 레이블 */
+        .hint {
+            position: absolute;
+            bottom: -50px;
+            width: 100%;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 3px;
+            transform: translateZ(10px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+    <div id="clickable-star">★</div>
+    <div class="background-container" id="bg-stars"></div>
+
+    <main class="content-wrapper" id="main-content">
+        <div class="ai-badge" id="ai-msg">CONNECTING...</div>
+        <h1 class="huge-title">BEYOND<br>FUTURE<br>P2K</h1>
+        <div class="hint">CATCH THE STAR TO ENTER</div>
+    </main>
+
+    <script>
+        const star = document.getElementById('clickable-star');
+        const content = document.getElementById('main-content');
+        const bgContainer = document.getElementById('bg-stars');
+
+        // 1. 별 이동 로직 (더 부드러운 속도)
+        let posX = Math.random() * (window.innerWidth - 70);
+        let posY = Math.random() * (window.innerHeight - 70);
+        let velX = 0.8; 
+        let velY = 0.8;
+
+        function moveStar() {
+            posX += velX;
+            posY += velY;
+            if (posX + 70 > window.innerWidth || posX < 0) velX *= -1;
+            if (posY + 70 > window.innerHeight || posY < 0) velY *= -1;
+            star.style.left = posX + 'px';
+            star.style.top = posY + 'px';
+            requestAnimationFrame(moveStar);
+        }
+        moveStar();
+
+        // 2. 3D 마우스 패럴랙스 효과 (메인 타이틀 기울기)
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 20;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 20;
+            
+            content.style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
+
+            // 배경 별들도 약간씩 움직여 깊이감 부여
+            const bgMoveX = (e.pageX - window.innerWidth / 2) / 50;
+            const bgMoveY = (e.pageY - window.innerHeight / 2) / 50;
+            bgContainer.style.transform = `translateX(${bgMoveX}px) translateY(${bgMoveY}px)`;
+        });
+
+        // 3. 배경 입자(Stars) 생성
+        for (let i = 0; i < 80; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.style.left = `${Math.random() * 100}%`;
+            dot.style.top = `${Math.random() * 100}%`;
+            // 입자마다 다른 깊이감 부여
+            dot.style.transform = `translateZ(${Math.random() * -500}px)`;
+            bgContainer.appendChild(dot);
+        }
+
+        // 4. 별 클릭 이벤트
+        star.addEventListener('click', () => {
+            star.style.transform = "scale(5) rotate(180deg)";
+            star.style.opacity = "0";
+            setTimeout(() => {
+                window.location.href = 'pics.html';
+            }, 500);
+        });
+
+        // 5. 메시지 순환
+        const messages = ["P2K NEURAL LINK", "WAVE AI SYSTEM", "PENTACUS TERMINAL"];
+        setInterval(() => {
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+            document.getElementById('ai-msg').innerText = msg;
+        }, 3000);
+    </script>
+</body>
+</html>
