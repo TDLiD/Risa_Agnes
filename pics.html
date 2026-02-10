@@ -119,39 +119,47 @@
         <img id="modal-img" src="" alt="">
     </div>
 
-    <script>
-        const scene = document.getElementById('sphere-scene');
-        const modal = document.getElementById('modal');
-        const modalImg = document.getElementById('modal-img');
-        const count = 19;
-        const radius = 420; // 구체 반지름 (화면 크기에 맞춰 자동 조절)
+<script>
+    const scene = document.getElementById('sphere-scene');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modal-img');
+    
+    // 1. 전체 이미지 개수를 37로 수정
+    const count = 37; 
+    const radius = 420; 
 
-        for (let i = 0; i < count; i++) {
-            const num = String(i + 1).padStart(3, '0');
-            const src = `images/image-${num}.jpg`;
-            
-            const img = document.createElement('img');
-            img.src = src;
-            img.className = 'photo-card';
-            
-            // 피보나치 구체 좌표 계산 (균등 배치)
-            const phi = Math.acos(-1 + (2 * i) / count);
-            const theta = Math.sqrt(count * Math.PI) * phi;
+    for (let i = 0; i < count; i++) {
+        const index = i + 1;
+        const num = String(index).padStart(3, '0');
+        
+        // 2. 인덱스에 따라 확장자를 jpg 또는 png로 선택
+        // 1~19번까지는 jpg, 20번부터는 png
+        const extension = index <= 19 ? 'jpg' : 'png';
+        const src = `images/image-${num}.${extension}`;
+        
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'photo-card';
+        
+        // 피보나치 구체 좌표 계산 (균등 배치)
+        const phi = Math.acos(-1 + (2 * i) / count);
+        const theta = Math.sqrt(count * Math.PI) * phi;
 
-            const x = radius * Math.sin(phi) * Math.cos(theta);
-            const y = radius * Math.sin(phi) * Math.sin(theta);
-            const z = radius * Math.cos(phi);
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta);
+        const z = radius * Math.cos(phi);
 
-            // 구의 중심을 바라보는 회전 각도 계산
-            img.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
+        // 구의 중심을 바라보는 회전 각도 계산
+        img.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
 
-            img.onclick = (e) => {
-                e.stopPropagation();
-                openModal(src);
-            };
+        img.onclick = (e) => {
+            e.stopPropagation();
+            openModal(src);
+        };
 
-            scene.appendChild(img);
-        }
+        scene.appendChild(img);
+    }
+
 
         function openModal(src) {
             modalImg.src = src;
