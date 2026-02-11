@@ -11,41 +11,36 @@
         #bg-canvas { position: fixed; inset: 0; z-index: 0; }
         .grid-bg { position: fixed; inset: -50%; width: 200vw; height: 200vh; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; transform: rotateX(60deg); opacity: 0.2; z-index: 1; pointer-events: none; }
 
-        /* 📌 GIF 테두리 레이아웃 */
-        .gif-border { position: fixed; z-index: 10; pointer-events: none; display: flex; overflow: hidden; gap: 5px; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
-        .gif-border img { width: var(--border-size); height: var(--border-size); object-fit: cover; border: 1px solid rgba(0, 255, 163, 0.3); }
+        /* 📌 GIF 테두리 레이아웃 고도화 */
+        .gif-border { position: fixed; z-index: 10; pointer-events: none; display: flex; overflow: hidden; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+        .gif-border img { width: var(--border-size); height: var(--border-size); object-fit: cover; border: 1px solid rgba(0, 255, 163, 0.3); flex-shrink: 0; }
 
-        .top-bar { top: 0; left: 0; width: 100%; height: var(--border-size); flex-direction: row; }
-        .bottom-bar { bottom: 0; left: 0; width: 100%; height: var(--border-size); flex-direction: row-reverse; }
-        .left-bar { top: 0; left: 0; width: var(--border-size); height: 100%; flex-direction: column-reverse; }
-        .right-bar { top: 0; right: 0; width: var(--border-size); height: 100%; flex-direction: column; }
+        /* 위치 및 크기 정의 */
+        .top-bar { top: 0; left: 0; width: 100vw; height: var(--border-size); }
+        .bottom-bar { bottom: 0; left: 0; width: 100vw; height: var(--border-size); }
+        .left-bar { top: 0; left: 0; width: var(--border-size); height: 100vh; flex-direction: column; }
+        .right-bar { top: 0; right: 0; width: var(--border-size); height: 100vh; flex-direction: column; }
 
-        .marquee { display: flex; gap: 5px; animation: scroll linear infinite; }
-        .top-bar .marquee { animation-duration: 40s; }
-        .bottom-bar .marquee { animation-duration: 45s; }
-        .left-bar .marquee { flex-direction: column; animation: scroll-v linear infinite; animation-duration: 50s; }
-        .right-bar .marquee { flex-direction: column; animation: scroll-v-rev linear infinite; animation-duration: 35s; }
+        /* 📌 무한 루프 애니메이션 최적화 */
+        .marquee { display: flex; flex-shrink: 0; gap: 0; }
+        .v-marquee { display: flex; flex-direction: column; flex-shrink: 0; gap: 0; }
 
-        @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        /* 가로 스크롤 */
+        @keyframes scroll-h { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .top-bar .marquee { animation: scroll-h 30s linear infinite; }
+        .bottom-bar .marquee { animation: scroll-h 35s linear infinite reverse; }
+
+        /* 세로 스크롤 */
         @keyframes scroll-v { from { transform: translateY(0); } to { transform: translateY(-50%); } }
-        @keyframes scroll-v-rev { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+        .left-bar .v-marquee { animation: scroll-v 40s linear infinite; }
+        .right-bar .v-marquee { animation: scroll-v 45s linear infinite reverse; }
 
-        /* 📌 말풍선 스타일 수정 (최상위 z-index) */
+        /* 말풍선 스타일 */
         .bubble {
-            position: fixed;
-            padding: 12px 18px;
-            background: #fff;
-            color: #000;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 800;
-            z-index: 99999 !important; /* 무조건 맨 위로 */
-            pointer-events: none;
-            white-space: nowrap;
-            box-shadow: 0 10px 30px rgba(0,255,163,0.6);
-            opacity: 0;
-            transform: scale(0.3) translateY(20px);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: fixed; padding: 12px 18px; background: #fff; color: #000; border-radius: 20px;
+            font-size: 14px; font-weight: 800; z-index: 99999; pointer-events: none; white-space: nowrap;
+            box-shadow: 0 10px 30px rgba(0,255,163,0.6); opacity: 0;
+            transform: scale(0.3) translateY(20px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 2px solid var(--lightning-color);
         }
         .bubble.active { opacity: 1; transform: scale(1) translateY(0); }
@@ -55,12 +50,10 @@
             bottom: -11px; left: 50%; transform: translateX(-50%);
         }
 
-        #heart { position: fixed; width: 100px; height: 100px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; touch-action: none; will-change: transform, left, top; }
+        #heart { position: fixed; width: 100px; height: 100px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; touch-action: none; }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-
         .content-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 5; pointer-events: none; }
         .huge-title { font-size: clamp(2rem, 8vw, 6rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,163,0.5); }
-        
         .flash-overlay { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 999999; transition: opacity 0.4s ease-in; }
         .flash-overlay.active { opacity: 1; }
     </style>
@@ -91,18 +84,28 @@
     <script>
         const gifList = Array.from({length: 31}, (_, i) => `bg/lisa/image-${String(i+1).padStart(3, '0')}.gif`);
         
-        function createMarquee(targetId) {
+        function createMarquee(targetId, isVertical = false) {
             const container = document.getElementById(targetId);
-            const marquee = document.createElement('div');
-            marquee.className = 'marquee';
-            [...gifList, ...gifList].forEach(src => {
+            const wrapper = document.createElement('div');
+            wrapper.className = isVertical ? 'v-marquee' : 'marquee';
+            
+            // 📌 이미지를 4배로 늘려 빈 공간 절대 발생 안 하게 함
+            const quadrupledList = [...gifList, ...gifList, ...gifList, ...gifList];
+            quadrupledList.forEach(src => {
                 const img = document.createElement('img');
                 img.src = src;
-                marquee.appendChild(img);
+                wrapper.appendChild(img);
             });
-            container.appendChild(marquee);
+            
+            // 애니메이션을 위해 똑같은 세트를 하나 더 추가
+            container.appendChild(wrapper.cloneNode(true));
+            container.appendChild(wrapper);
         }
-        ['border-top', 'border-bottom', 'border-left', 'border-right'].forEach(id => createMarquee(id));
+
+        createMarquee('border-top', false);
+        createMarquee('border-bottom', false);
+        createMarquee('border-left', true);
+        createMarquee('border-right', true);
 
         const messages = [
             "LISA, cahayamu lebih terang dari siapapun! ✨",
@@ -112,75 +115,59 @@
             "Kamu tidak sendirian, kami ada untukmu 🤝",
             "Semua impianmu akan terwujud 🌈",
             "LISA, kehadiranmu saja sudah sempurna 💎",
-            "Tak apa pelan, yang penting sampai 🐢",
-            "Semua orang tahu kerja kerasmu 🔥",
-            "Besok akan menjadi hari yang lebih cerah ☀️",
-            "LISA, kamu adalah muse abadi kami 🎨",
-            "Fajar pasti tiba setelah kegelapan 🌌",
-            "Percayalah pada dirimu, LISA spesial 🌟",
-            "Boleh istirahat sejenak jika lelah 🌿",
-            "Kami bangga dengan keberanianmu 👏",
-            "Semoga LISA penuh cinta dan harapan 🌸",
-            "Semangatmu yang tak pernah padam! ⚡",
-            "Kerja bagus untuk hari ini, LISA 🫂",
-            "Nama terindah di dunia, LISA 🌹",
-            "Ada kebahagiaan di ujung jalan ini 🎈"
+            "Tak apa pelan, yang 중요해! 🐢",
+            "Kerja kerasmu luar biasa! 🔥",
+            "Besok akan lebih cerah ☀️",
+            "LISA, muse abadi kami 🎨",
+            "Fajar pasti tiba 🌌",
+            "Percayalah pada dirimu 🌟",
+            "Boleh istirahat sejenak 🌿",
+            "Bangga padamu! 👏",
+            "Cinta dan harapan LISA 🌸",
+            "Semangat membara! ⚡",
+            "Good job LISA! 🫂",
+            "LISA yang cantik 🌹",
+            "Ada bahagia di depan 🎈"
         ];
 
         function showRandomBubble() {
-            // 1. 기존 말풍선 즉시 제거
-            const existing = document.querySelector('.bubble');
-            if(existing) existing.remove();
+            const old = document.querySelector('.bubble');
+            if(old) old.remove();
 
-            // 2. 현재 화면(Viewport) 안에 보이는 이미지들만 찾기
-            const allImages = document.querySelectorAll('.marquee img');
+            const allImages = document.querySelectorAll('.gif-border img');
             const visibleImages = Array.from(allImages).filter(img => {
                 const r = img.getBoundingClientRect();
                 return (r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth);
             });
 
             if (visibleImages.length === 0) return;
+            const target = visibleImages[Math.floor(Math.random() * visibleImages.length)];
+            const rect = target.getBoundingClientRect();
 
-            // 3. 보이는 이미지 중 하나 랜덤 선택
-            const targetImg = visibleImages[Math.floor(Math.random() * visibleImages.length)];
-            const rect = targetImg.getBoundingClientRect();
-
-            // 4. 말풍선 생성 및 배치
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
             bubble.innerText = messages[Math.floor(Math.random() * messages.length)];
             document.body.appendChild(bubble);
 
             const bRect = bubble.getBoundingClientRect();
-            
-            // 위치 계산 (이미지 중앙 정렬)
             let x = rect.left + (rect.width / 2) - (bRect.width / 2);
             let y = rect.top - bRect.height - 15;
 
-            // 화면 경계 보정
             if (x < 10) x = 10;
             if (x + bRect.width > window.innerWidth - 10) x = window.innerWidth - bRect.width - 10;
-            if (y < 85) y = rect.bottom + 15; // 상단바 이미지면 아래에 표시
+            if (y < 85) y = rect.bottom + 15;
 
             bubble.style.left = x + 'px';
             bubble.style.top = y + 'px';
-
-            // 5. 등장 및 퇴장 애니메이션
-            requestAnimationFrame(() => {
-                bubble.classList.add('active');
-            });
-
+            requestAnimationFrame(() => bubble.classList.add('active'));
             setTimeout(() => {
                 bubble.classList.remove('active');
                 setTimeout(() => bubble.remove(), 500);
             }, 2500);
         }
-
-        // 초기 실행 및 3초 주기
-        setTimeout(showRandomBubble, 1000);
         setInterval(showRandomBubble, 3000);
 
-        // --- 배경 캔버스 및 하트 로직 (이전과 동일) ---
+        // 배경 캔버스
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
         let particles = [];
@@ -219,6 +206,7 @@
         }
         animate();
 
+        // 하트
         const heart = document.getElementById('heart'), flash = document.getElementById('flash');
         let hSize = 100, posX = width/2, posY = height/2, velX = 1.2, velY = 1.0;
         function moveHeart() {
