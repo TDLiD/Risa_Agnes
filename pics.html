@@ -4,55 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 Future Gallery - Lisa n Agnes</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
         :root {
             --accent: #00ffa3;
-            --bg: #f2f2f2;
+            --glow: rgba(0, 255, 163, 0.4);
         }
 
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background-color: var(--bg);
+            color: white;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
+            background-color: #050507;
+            perspective: 2000px;
         }
 
-        #three-canvas {
+        /* 1. Granim 배경용 캔버스 */
+        #canvas-bg {
             position: fixed;
             top: 0; left: 0;
-            outline: none;
+            width: 100%; height: 100%;
+            z-index: -2;
         }
 
-        /* UI */
-        .nav { position: fixed; top: 20px; left: 20px; z-index: 1000; }
-        .btn {
-            padding: 10px 22px;
-            background: #333;
-            color: var(--accent);
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 0.8rem;
-            transition: transform 0.2s;
-            display: inline-block;
-        }
-        .btn:hover { transform: scale(1.05); }
-
-        .instructions {
+        /* 2. 배경 오버레이 (약간 어둡게 처리하여 몰입감 상승) */
+        body::before {
+            content: "";
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            color: #555;
-            z-index: 1000;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: -1;
             pointer-events: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* 🌏 자전하는 메인 컨테이너 */
+        #sphere-scene {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            transform-style: preserve-3d;
+            animation: rotateEarth 30s linear infinite;
+        }
+
+        @keyframes rotateEarth {
+            from { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(0deg); }
+            to { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(360deg); }
+        }
+
+        /* 사진 카드 스타일 */
+        .photo-card {
+            position: absolute;
+            width: 150px; 
+            height: 150px;
+            left: -75px; top: -75px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            backface-visibility: visible; 
+            transition: border 0.3s, box-shadow 0.3s, filter 0.3s, transform 0.3s;
+            filter: brightness(0.7);
+        }
+
+        .photo-card:hover {
+            filter: brightness(1.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px var(--glow);
+            z-index: 10000 !important;
+            /* 호버 시 구의 중심에서 바깥쪽으로 살짝 튀어나오는 효과 */
+            transform: scale(1.2) !important; 
         }
 
         /* 확대 모달 */
@@ -60,185 +83,130 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(0, 0, 0, 0.9);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 2000;
-            backdrop-filter: blur(10px);
+            z-index: 999999;
+            backdrop-filter: blur(15px);
             cursor: zoom-out;
         }
+
         #modal img {
-            max-width: 80%;
-            max-height: 80%;
-            border-radius: 10px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-            transform: scale(0.9);
-            transition: transform 0.3s;
+            max-width: 85%;
+            max-height: 85%;
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 50px var(--glow);
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+
         #modal.active img { transform: scale(1); }
+
+        /* UI */
+        .nav { position: fixed; top: 20px; left: 20px; z-index: 10000; }
+        .btn {
+            padding: 10px 22px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            text-decoration: none;
+            background: rgba(0,0,0,0.5);
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            background: var(--accent);
+            color: black;
+            box-shadow: 0 0 20px var(--glow);
+        }
     </style>
 </head>
 <body>
 
-    <nav class="nav"><a href="index.html" class="btn">← BACK TO HOME</a></nav>
-    <div class="instructions">DRAG TO MOVE • SCROLL TO ZOOM • CLICK PHOTO</div>
-    
-    <canvas id="three-canvas"></canvas>
+    <canvas id="canvas-bg"></canvas>
+
+    <nav class="nav"><a href="index.html" class="btn">← EXIT GALLERY</a></nav>
+
+    <div id="sphere-scene"></div>
 
     <div id="modal" onclick="closeModal()">
-        <img id="modal-img" src="">
+        <img id="modal-img" src="" alt="">
     </div>
 
 <script>
-    // --- 1. 기본 설정 ---
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#f2f2f2');
-    // 안개 추가 (멀리 있는 사진은 희미하게 - 거리감 극대화)
-    scene.fog = new THREE.Fog('#f2f2f2', 5, 25);
-
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 5, 10);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-
-    // --- 2. 조명 (브루노 시몽 스타일의 부드러운 빛) ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    sunLight.position.set(5, 10, 7);
-    sunLight.castShadow = true;
-    scene.add(sunLight);
-
-    // --- 3. 바닥 (무한한 공간 느낌) ---
-    const gridHelper = new THREE.GridHelper(100, 50, 0xcccccc, 0xeeeeee);
-    gridHelper.position.y = -0.01;
-    scene.add(gridHelper);
-
-    const floorGeo = new THREE.PlaneGeometry(200, 200);
-    const floorMat = new THREE.MeshStandardMaterial({ color: '#f2f2f2' });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    // --- 4. 사진 카드 생성 및 랜덤 배치 ---
-    const textureLoader = new THREE.TextureLoader();
-    const photos = [];
-    const photoCount = 37;
-
-    for (let i = 1; i <= photoCount; i++) {
-        const num = String(i).padStart(3, '0');
-        const ext = i <= 19 ? 'jpg' : 'png';
-        const src = `images/image-${num}.${ext}`;
-
-        // 임시 텍스처로 평면 생성
-        const geometry = new THREE.PlaneGeometry(3, 3);
-        const material = new THREE.MeshStandardMaterial({ 
-            map: textureLoader.load(src),
-            side: THREE.DoubleSide
-        });
-        
-        const photo = new THREE.Mesh(geometry, material);
-        
-        // 브루노 시몽 스타일: 무작위로 넓게 배치
-        photo.position.x = (Math.random() - 0.5) * 30;
-        photo.position.z = (Math.random() - 0.5) * 30;
-        photo.position.y = 1.5; // 바닥 위에 띄움
-        
-        // 사진을 카메라 쪽으로 살짝 기울임
-        photo.rotation.y = Math.random() * Math.PI;
-        photo.castShadow = true;
-        
-        photo.userData = { src: src }; // 클릭 이벤트용 데이터 저장
-        photos.push(photo);
-        scene.add(photo);
-    }
-
-    // --- 5. 인터랙션 (마우스 이동 및 줌) ---
-    let targetX = 0, targetY = 5, targetZ = 10;
-    let mouseX = 0, mouseY = 0;
-    let isDragging = false;
-    let prevMouseX = 0, prevMouseY = 0;
-
-    // 드래그로 시점 이동
-    window.addEventListener('mousedown', () => isDragging = true);
-    window.addEventListener('mouseup', () => isDragging = false);
-    window.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            const deltaX = e.clientX - prevMouseX;
-            const deltaZ = e.clientY - prevMouseY;
-            targetX -= deltaX * 0.05;
-            targetZ -= deltaZ * 0.05;
-        }
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
-    });
-
-    // 휠로 줌인/줌아웃
-    window.addEventListener('wheel', (e) => {
-        targetY += e.deltaY * 0.01;
-        targetY = Math.max(2, Math.min(20, targetY)); // 높이 제한
-    });
-
-    // 사진 클릭 감지 (Raycaster)
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    window.addEventListener('click', (e) => {
-        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(photos);
-
-        if (intersects.length > 0) {
-            openModal(intersects[0].object.userData.src);
+    // 1. Granim.js 배경 설정 (index.html과 통일감 있는 오로라 효과)
+    var granimInstance = new Granim({
+        element: '#canvas-bg',
+        direction: 'top-bottom',
+        isPausedWhenNotInView: true,
+        states : {
+            "default-state": {
+                gradients: [
+                    ['#050507', '#1a0f2e'],
+                    ['#0f172a', '#050507'],
+                    ['#1e1b4b', '#0a0a12']
+                ],
+                transitionSpeed: 8000
+            }
         }
     });
 
-    // --- 6. 애니메이션 루프 ---
-    function animate() {
-        requestAnimationFrame(animate);
+    const scene = document.getElementById('sphere-scene');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modal-img');
+    
+    const count = 37; 
+    const radius = 450; // 구체 반지름 살짝 확대
 
-        // 카메라 이동 부드럽게 (Lerp)
-        camera.position.x += (targetX - camera.position.x) * 0.1;
-        camera.position.y += (targetY - camera.position.y) * 0.1;
-        camera.position.z += (targetZ - camera.position.z) * 0.1;
-        camera.lookAt(targetX, 0, targetZ - 5);
+    for (let i = 0; i < count; i++) {
+        const index = i + 1;
+        const num = String(index).padStart(3, '0');
+        const extension = index <= 19 ? 'jpg' : 'png';
+        const src = `images/image-${num}.${extension}`;
+        
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'photo-card';
+        
+        // 피보나치 구체 좌표 계산
+        const phi = Math.acos(-1 + (2 * i) / count);
+        const theta = Math.sqrt(count * Math.PI) * phi;
 
-        // 사진들 살짝씩 공중에 떠서 움직이는 효과
-        photos.forEach((p, i) => {
-            p.position.y = 1.5 + Math.sin(Date.now() * 0.001 + i) * 0.2;
-            p.rotation.y += 0.005;
-        });
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta);
+        const z = radius * Math.cos(phi);
 
-        renderer.render(scene, camera);
+        // 기본 변환 설정 (회전 포함)
+        const baseTransform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
+        img.style.transform = baseTransform;
+
+        img.onclick = (e) => {
+            e.stopPropagation();
+            openModal(src);
+        };
+
+        scene.appendChild(img);
     }
-    animate();
 
-    // 모달 함수
     function openModal(src) {
-        const modal = document.getElementById('modal');
-        document.getElementById('modal-img').src = src;
+        modalImg.src = src;
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('active'), 10);
     }
 
     function closeModal() {
-        const modal = document.getElementById('modal');
         modal.classList.remove('active');
         setTimeout(() => modal.style.display = 'none', 300);
     }
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+    // 마우스 이동에 따른 미세한 시점 변화 (패럴랙스)
+    document.addEventListener('mousemove', (e) => {
+        const moveX = (e.pageX - window.innerWidth / 2) / 100;
+        const moveY = (e.pageY - window.innerHeight / 2) / 100;
+        scene.parentElement.style.perspectiveOrigin = `${50 + moveX}% ${50 + moveY}%`;
     });
 </script>
 </body>
