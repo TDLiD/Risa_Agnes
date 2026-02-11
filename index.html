@@ -1,183 +1,205 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 Future Web - Lisa n Agnes</title>
-    <style>
-        :root {
-            --accent: #ffffff;
-            --text: #ffffff;
-            --heart-glow: #ff4d6d; /* 네온 핑크 광채 */
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>2026 Future Web - Lisa n Agnes</title>
 
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background-color: #000000;
-            color: var(--text);
-            font-family: 'Inter', system-ui, sans-serif;
-            overflow: hidden;
-            touch-action: none;
-        }
+<style>
+:root {
+    --accent: #ffffff;
+    --text: #ffffff;
+    --heart-glow: #ff4d6d;
+}
 
-        /* 배경 그리드 */
-        .grid-bg {
-            position: fixed;
-            width: 200vw; height: 200vh;
-            top: -50%; left: -50%;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-            transform: rotateX(60deg);
-            z-index: 0;
-            opacity: 0.3;
-        }
+body, html {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    background-color: #000000;
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+}
 
-        /* 이미지 마스킹 하트 오브젝트 */
-        .floating-heart {
-            position: fixed;
-            width: 120px; /* 크기를 50px에서 120px로 대폭 확대 */
-            height: 120px;
-            z-index: 5;
-            cursor: pointer;
-            /* 하트 모양으로 이미지 자르기 */
-            clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
-            /* SVG 경로 좌표를 120px 크기에 맞게 스케일링 */
-            clip-path:  path('M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z');
-            
-            background-image: url('bg/bg2.png');
-            background-size: cover;
-            background-position: center;
-            
-            box-shadow: 0 0 25px var(--heart-glow); /* 하트 광채 */
-            animation: pulse 1.5s infinite ease-in-out;
-            will-change: left, top;
-        }
+/* 배경 그리드 */
+.grid-bg {
+    position: fixed;
+    width: 200vw; height: 200vh;
+    top: -50%; left: -50%;
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: rotateX(60deg);
+    z-index: 0;
+    opacity: 0.3;
+}
 
-        /* 하트 외곽선 효과를 위한 가상 요소 */
-        .floating-heart::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            border: 2px solid rgba(255, 77, 109, 0.5);
-            clip-path: inherit;
-            pointer-events: none;
-        }
+/* ===== 모바일 완전 대응 하트 ===== */
+.floating-heart {
+    position: fixed;
+    width: 120px;
+    height: 120px;
+    z-index: 5;
+    cursor: pointer;
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 10px var(--heart-glow)); }
-            50% { transform: scale(1.1); filter: brightness(1.2) drop-shadow(0 0 20px var(--heart-glow)); }
-        }
+    background-image: url('bg/bg2.png');
+    background-size: cover;
+    background-position: center;
 
-        /* 텍스트 콘텐츠 */
-        .content-wrapper {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            text-align: center;
-            pointer-events: none;
-            width: 100%;
-        }
+    /* SVG 마스크 방식 (모바일 안정) */
+    -webkit-mask-image: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>\
+    <path fill='white' d='M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z'/>\
+    </svg>");
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
 
-        .huge-title {
-            font-size: clamp(2.2rem, 10vw, 6rem);
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #ffffff;
-            text-shadow: 0 0 20px rgba(0,0,0,0.9);
-            line-height: 1.1;
-            margin: 10px 0;
-        }
+    mask-image: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>\
+    <path fill='white' d='M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z'/>\
+    </svg>");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
 
-        /* 나머지 스타일 동일... */
-        .ai-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border: 1px solid #ffffff;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
+    box-shadow: 0 0 25px var(--heart-glow);
+    animation: pulse 1.5s infinite ease-in-out;
+    will-change: left, top;
+}
 
-        .hint {
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.6);
-            letter-spacing: 3px;
-        }
+/* 외곽선 효과 */
+.floating-heart::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(255,77,109,0.5);
 
-        .flash-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: white;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
-        }
-    </style>
+    -webkit-mask: inherit;
+    mask: inherit;
+
+    pointer-events: none;
+}
+
+@keyframes pulse {
+    0%,100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 10px var(--heart-glow)); }
+    50% { transform: scale(1.1); filter: brightness(1.2) drop-shadow(0 0 20px var(--heart-glow)); }
+}
+
+/* 텍스트 */
+.content-wrapper {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    text-align: center;
+    pointer-events: none;
+    width: 100%;
+}
+
+.huge-title {
+    font-size: clamp(2.2rem, 10vw, 6rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(0,0,0,0.9);
+    line-height: 1.1;
+    margin: 10px 0;
+}
+
+.ai-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid #ffffff;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.hint {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 3px;
+}
+
+.flash-overlay {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+</style>
 </head>
+
 <body>
 
-    <div class="grid-bg"></div>
-    <div class="flash-overlay" id="flash"></div>
-    
-    <div class="floating-heart" id="heart"></div>
+<div class="grid-bg"></div>
+<div class="flash-overlay" id="flash"></div>
+<div class="floating-heart" id="heart"></div>
 
-    <main class="content-wrapper" id="main-content">
-        <div class="ai-badge">HEART CORE ONLINE</div>
-        <h1 class="huge-title">BEYOND<br>FUTURE<br>Lisa n Agnes</h1>
-        <div class="hint">TAP THE HEART TO ENTER</div>
-    </main>
+<main class="content-wrapper" id="main-content">
+    <div class="ai-badge">HEART CORE ONLINE</div>
+    <h1 class="huge-title">BEYOND<br>FUTURE<br>Lisa n Agnes</h1>
+    <div class="hint">TAP THE HEART TO ENTER</div>
+</main>
 
-    <script>
-        const heart = document.getElementById('heart');
-        const flash = document.getElementById('flash');
-        
-        let posX = Math.random() * (window.innerWidth - 120);
-        let posY = Math.random() * (window.innerHeight - 120);
-        
-        // 이동 속도 (부드럽게 유지)
-        let velX = 1.0; 
-        let velY = 0.7; 
-        const size = 120; // 수정된 크기 반영
+<script>
+const heart = document.getElementById('heart');
+const flash = document.getElementById('flash');
 
-        function moveHeart() {
-            posX += velX;
-            posY += velY;
+let size = 120;
+let posX = Math.random() * (window.innerWidth - size);
+let posY = Math.random() * (window.innerHeight - size);
 
-            if (posX + size > window.innerWidth || posX < 0) velX *= -1;
-            if (posY + size > window.innerHeight || posY < 0) velY *= -1;
+let velX = 1.0;
+let velY = 0.7;
 
-            heart.style.left = posX + 'px';
-            heart.style.top = posY + 'px';
+function moveHeart() {
+    posX += velX;
+    posY += velY;
 
-            requestAnimationFrame(moveHeart);
-        }
+    if (posX + size > window.innerWidth || posX < 0) velX *= -1;
+    if (posY + size > window.innerHeight || posY < 0) velY *= -1;
 
-        moveHeart();
+    heart.style.left = posX + 'px';
+    heart.style.top = posY + 'px';
 
-        heart.addEventListener('click', () => {
-            flash.style.opacity = "1";
-            setTimeout(() => {
-                window.location.href = 'pics.html';
-            }, 500);
-        });
+    requestAnimationFrame(moveHeart);
+}
 
-        // 자이로 효과 (터치/마우스 이동 시 배경 살짝 흔들림)
-        document.addEventListener('mousemove', (e) => {
-            const moveX = (window.innerWidth / 2 - e.clientX) / 30;
-            const moveY = (window.innerHeight / 2 - e.clientY) / 30;
-            document.getElementById('main-content').style.transform = 
-                `translate(-50%, -50%) rotateY(${moveX}deg) rotateX(${-moveY}deg)`;
-        });
-    </script>
+moveHeart();
+
+heart.addEventListener('click', () => {
+    flash.style.opacity = "1";
+    setTimeout(() => {
+        window.location.href = 'pics.html';
+    }, 500);
+});
+
+/* 모바일 터치 대응 */
+document.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    const moveX = (window.innerWidth / 2 - touch.clientX) / 30;
+    const moveY = (window.innerHeight / 2 - touch.clientY) / 30;
+    document.getElementById('main-content').style.transform =
+        `translate(-50%, -50%) rotateY(${moveX}deg) rotateX(${-moveY}deg)`;
+});
+
+document.addEventListener('mousemove', (e) => {
+    const moveX = (window.innerWidth / 2 - e.clientX) / 30;
+    const moveY = (window.innerHeight / 2 - e.clientY) / 30;
+    document.getElementById('main-content').style.transform =
+        `translate(-50%, -50%) rotateY(${moveX}deg) rotateX(${-moveY}deg)`;
+});
+</script>
+
 </body>
 </html>
