@@ -2,14 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 Future Web - Lisa n Agnes</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --accent: #ffffff;
-            --accent-glow: rgba(255, 255, 255, 0.2);
             --text: #ffffff;
         }
 
@@ -19,54 +18,32 @@
             color: var(--text);
             font-family: 'Inter', system-ui, sans-serif;
             overflow: hidden;
-            background-color: #000000; /* 배경 블랙 고정 */
+            background-color: #000000;
             display: flex;
             align-items: center;
             justify-content: center;
-            perspective: 1000px;
+            touch-action: none;
         }
 
-        /* 배경 그라데이션 제거 혹은 아주 어둡게 유지 */
-        #canvas-image-blender {
-            position: absolute;
-            width: 100%; height: 100%;
-            top: 0; left: 0;
-            z-index: -2;
-            opacity: 0.3; /* 블랙 배경을 위해 투명도 낮춤 */
-        }
-
-        #three-canvas {
+        #canvas-container {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 5;
-            pointer-events: none;
+            z-index: 1;
+        }
+
+        #three-canvas {
+            width: 100%; height: 100%;
+            display: block;
         }
 
         #star-hitbox {
             position: fixed;
-            z-index: 10000;
-            width: 160px; height: 160px;
+            z-index: 1000;
+            width: 80px; height: 80px; /* 크기 축소에 맞춰 히트박스 조정 */
             cursor: pointer;
             pointer-events: auto;
             border-radius: 50%;
-        }
-
-        .grid-bg {
-            position: absolute;
-            width: 200%; height: 200%;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            transform: rotateX(60deg);
-            animation: gridMove 20s linear infinite;
-            z-index: -1;
-        }
-
-        @keyframes gridMove {
-            from { background-position: 0 0; }
-            to { background-position: 0 1000px; }
         }
 
         .content-wrapper {
@@ -75,81 +52,71 @@
             text-align: center;
             pointer-events: none;
             transform-style: preserve-3d;
-            transition: transform 0.1s ease-out; /* 흔들림을 위한 부드러운 전환 */
+            will-change: transform;
+            padding: 20px;
         }
 
         .huge-title {
-            font-size: clamp(2.5rem, 10vw, 7rem);
+            font-size: clamp(2rem, 12vw, 6rem);
             font-weight: 900;
             text-transform: uppercase;
             color: #ffffff;
-            /* 3D 입체 텍스트 효과 */
             text-shadow: 
-                0 1px 0 #ccc,
-                0 2px 0 #c9c9c9,
-                0 3px 0 #bbb,
-                0 4px 0 #b9b9b9,
-                0 5px 0 #aaa,
-                0 6px 1px rgba(0,0,0,.1),
-                0 0 5px rgba(0,0,0,.1),
-                0 1px 3px rgba(0,0,0,.3),
-                0 3px 5px rgba(0,0,0,.2),
-                0 5px 10px rgba(0,0,0,.25),
-                0 10px 10px rgba(0,0,0,.2),
-                0 20px 20px rgba(0,0,0,.15);
-            line-height: 0.9;
-            margin: 20px 0;
+                0 2px 0 #bbb,
+                0 4px 0 #999,
+                0 10px 20px rgba(0,0,0,0.5);
+            line-height: 1.1;
+            margin: 10px 0;
         }
 
         .ai-badge {
             display: inline-block;
-            padding: 10px 20px;
-            border: 2px solid #ffffff;
+            padding: 8px 16px;
+            border: 1.5px solid #ffffff;
             border-radius: 30px;
-            color: #ffffff;
-            margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.1);
+            font-size: 0.7rem;
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(5px);
             letter-spacing: 2px;
-            font-weight: bold;
+            margin-bottom: 20px;
         }
 
         .hint {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.8);
-            letter-spacing: 5px;
-            text-transform: uppercase;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 3px;
+            margin-top: 15px;
+        }
+
+        .grid-bg {
+            position: fixed;
+            width: 200vw; height: 200vh;
+            top: -50%; left: -50%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: rotateX(60deg);
+            z-index: 0;
+            opacity: 0.2;
         }
     </style>
 </head>
 <body>
 
     <div class="grid-bg"></div>
-    <canvas id="canvas-image-blender"></canvas>
-    <canvas id="three-canvas"></canvas>
+    <div id="canvas-container">
+        <canvas id="three-canvas"></canvas>
+    </div>
     <div id="star-hitbox"></div>
 
     <main class="content-wrapper" id="main-content">
         <div class="ai-badge">HEART CORE ONLINE</div>
         <h1 class="huge-title">BEYOND<br>FUTURE<br>Lisa n Agnes</h1>
-        <div class="hint">CATCH THE HEART TO ENTER</div>
+        <div class="hint">TAP THE HEART TO ENTER</div>
     </main>
 
     <script>
-        // 1. 배경 (아주 어두운 그라데이션)
-        var granimInstance = new Granim({
-            element: '#canvas-image-blender',
-            direction: 'diagonal',
-            states : {
-                "default-state": {
-                    gradients: [['#000000', '#111111'], ['#050505', '#000000']],
-                    transitionSpeed: 10000
-                }
-            }
-        });
-
-        // 2. Three.js (똑바른 하트 + 선명한 이미지)
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ 
@@ -157,16 +124,15 @@
             alpha: true, 
             antialias: true 
         });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
 
         const textureLoader = new THREE.TextureLoader();
         const heartTexture = textureLoader.load('bg/bg2.png');
-        heartTexture.anisotropy = 16; 
 
         function createHeartGeometry() {
             const shape = new THREE.Shape();
             const x = 0, y = 0;
-            // 하트 모양 좌표 재설정 (똑바로 나오게)
             shape.moveTo( x + 2.5, y + 2.5 );
             shape.bezierCurveTo( x + 2.5, y + 2.5, x + 2.0, y, x, y );
             shape.bezierCurveTo( x - 3.0, y, x - 3.0, y + 3.5, x - 3.0, y + 3.5 );
@@ -175,19 +141,23 @@
             shape.bezierCurveTo( x + 8.0, y + 3.5, x + 8.0, y, x + 5.0, y );
             shape.bezierCurveTo( x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5 );
 
-            const extrudeSettings = { depth: 1.5, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5, bevelSegments: 10 };
+            const extrudeSettings = { 
+                depth: 1.2, 
+                bevelEnabled: true, 
+                bevelThickness: 0.4, 
+                bevelSize: 0.4, 
+                bevelSegments: 6 
+            };
             const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            
             geo.center();
-            geo.rotateZ(Math.PI); // 180도 회전시켜 정방향 고정
+            geo.rotateZ(Math.PI);
 
-            // UV 재정의: 이미지가 가운데 선명하게 박히도록 계산
-            const pos = geo.attributes.position;
             geo.computeBoundingBox();
             const min = geo.boundingBox.min;
             const max = geo.boundingBox.max;
             const size = new THREE.Vector2(max.x - min.x, max.y - min.y);
             const uvs = [];
+            const pos = geo.attributes.position;
             for (let i = 0; i < pos.count; i++) {
                 let u = (pos.getX(i) - min.x) / size.x;
                 let v = (pos.getY(i) - min.y) / size.y;
@@ -200,40 +170,45 @@
         const geometry = createHeartGeometry();
         const material = new THREE.MeshPhysicalMaterial({
             map: heartTexture,
-            color: 0xffffff,
+            transparent: true,
+            metalness: 0.1,
+            roughness: 0.2,
             emissive: 0xffffff,
-            emissiveIntensity: 0.15,
-            metalness: 0.2,
-            roughness: 0.1,
-            transparent: true
+            emissiveIntensity: 0.2
         });
         
         const heartMesh = new THREE.Mesh(geometry, material);
+        // --- 하트 사이즈를 절반(0.5)으로 줄임 ---
+        heartMesh.scale.set(0.5, 0.5, 0.5); 
         scene.add(heartMesh);
 
-        // 조명: 이미지 선명도를 위해 정면 조명 강화
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xffffff, 1.2);
-        pointLight.position.set(0, 0, 10);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        const pointLight = new THREE.PointLight(0xffffff, 1.5);
+        pointLight.position.set(5, 5, 10);
         scene.add(pointLight);
 
-        camera.position.z = 15;
+        camera.position.z = 12;
 
         let posX = window.innerWidth / 2;
         let posY = window.innerHeight / 2;
-        let velX = 1.5; 
-        let velY = 1.2; 
+        
+        // --- 이동 속도를 대폭 줄임 (기존 대비 약 1/3 ~ 1/2 수준) ---
+        let velX = window.innerWidth < 600 ? 0.4 : 0.6; 
+        let velY = window.innerWidth < 600 ? 0.3 : 0.5; 
+        
         const hitbox = document.getElementById('star-hitbox');
+        const boxSize = 40; // 하트가 작아졌으므로 힛박스 중심 오프셋도 줄임
 
         function animate() {
             requestAnimationFrame(animate);
-            heartMesh.rotation.y += 0.02;
+            heartMesh.rotation.y += 0.015; // 회전 속도도 약간 더 차분하게
+            heartMesh.rotation.x = Math.sin(Date.now() * 0.0008) * 0.15;
             
             posX += velX;
             posY += velY;
-            if (posX > window.innerWidth - 80 || posX < 80) velX *= -1;
-            if (posY > window.innerHeight - 80 || posY < 80) velY *= -1;
+
+            if (posX > window.innerWidth - boxSize || posX < boxSize) velX *= -1;
+            if (posY > window.innerHeight - boxSize || posY < boxSize) velY *= -1;
 
             const vector = new THREE.Vector3((posX / window.innerWidth) * 2 - 1, -(posY / window.innerHeight) * 2 + 1, 0.5);
             vector.unproject(camera);
@@ -242,23 +217,27 @@
             const pos = camera.position.clone().add(dir.multiplyScalar(distance));
             heartMesh.position.copy(pos);
 
-            hitbox.style.left = (posX - 80) + 'px';
-            hitbox.style.top = (posY - 80) + 'px';
+            hitbox.style.left = (posX - boxSize) + 'px';
+            hitbox.style.top = (posY - boxSize) + 'px';
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // 마우스 패럴랙스 (텍스트 3D 흔들림)
-        document.addEventListener('mousemove', (e) => {
-            const x = (window.innerWidth / 2 - e.clientX) / 25;
-            const y = (window.innerHeight / 2 - e.clientY) / 25;
-            const content = document.getElementById('main-content');
-            content.style.transform = `rotateY(${x}deg) rotateX(${-y}deg) translateZ(50px)`;
-        });
+        function handleMove(clientX, clientY) {
+            const x = (window.innerWidth / 2 - clientX) / 25;
+            const y = (window.innerHeight / 2 - clientY) / 25;
+            document.getElementById('main-content').style.transform = `rotateY(${x}deg) rotateX(${-y}deg) translateZ(40px)`;
+        }
+
+        document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+        document.addEventListener('touchmove', (e) => {
+            if(e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: true});
 
         hitbox.addEventListener('click', () => {
-            document.body.style.background = "white";
+            document.body.style.transition = "background 0.5s ease";
+            document.body.style.backgroundColor = "white";
             setTimeout(() => { window.location.href = 'pics.html'; }, 500);
         });
 
