@@ -2,139 +2,78 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 Future Web - Lisa n Agnes</title>
 
 <style>
 :root {
-    --accent: #ffffff;
-    --text: #ffffff;
     --heart-glow: #ff4d6d;
 }
 
 body, html {
-    margin: 0; padding: 0;
-    width: 100%; height: 100%;
-    background-color: #000000;
-    color: var(--text);
-    font-family: 'Inter', system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
     overflow: hidden;
-    touch-action: none;
 }
 
-/* 배경 그리드 */
+/* 배경 */
 .grid-bg {
     position: fixed;
-    width: 200vw; height: 200vh;
-    top: -50%; left: -50%;
-    background-image: 
+    width: 200vw;
+    height: 200vh;
+    top: -50%;
+    left: -50%;
+    background-image:
         linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
     background-size: 40px 40px;
     transform: rotateX(60deg);
-    z-index: 0;
     opacity: 0.3;
 }
 
-/* ===== 모바일 완전 대응 하트 ===== */
-.floating-heart {
+/* SVG 하트 */
+#heart {
     position: fixed;
     width: 120px;
     height: 120px;
-    z-index: 5;
+    z-index: 10;
     cursor: pointer;
-
-    background-image: url('bg/bg2.png');
-    background-size: cover;
-    background-position: center;
-
-    /* SVG 마스크 방식 (모바일 안정) */
-    -webkit-mask-image: url("data:image/svg+xml;utf8,\
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>\
-    <path fill='white' d='M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z'/>\
-    </svg>");
-    -webkit-mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-
-    mask-image: url("data:image/svg+xml;utf8,\
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>\
-    <path fill='white' d='M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z'/>\
-    </svg>");
-    mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-position: center;
-
-    box-shadow: 0 0 25px var(--heart-glow);
+    filter: drop-shadow(0 0 15px var(--heart-glow));
     animation: pulse 1.5s infinite ease-in-out;
-    will-change: left, top;
-}
-
-/* 외곽선 효과 */
-.floating-heart::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 2px solid rgba(255,77,109,0.5);
-
-    -webkit-mask: inherit;
-    mask: inherit;
-
-    pointer-events: none;
 }
 
 @keyframes pulse {
-    0%,100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 10px var(--heart-glow)); }
-    50% { transform: scale(1.1); filter: brightness(1.2) drop-shadow(0 0 20px var(--heart-glow)); }
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
-/* 텍스트 */
 .content-wrapper {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 10;
     text-align: center;
-    pointer-events: none;
-    width: 100%;
+    color: white;
+    z-index: 5;
 }
 
 .huge-title {
-    font-size: clamp(2.2rem, 10vw, 6rem);
+    font-size: clamp(2rem, 10vw, 6rem);
     font-weight: 900;
-    text-transform: uppercase;
-    color: #ffffff;
-    text-shadow: 0 0 20px rgba(0,0,0,0.9);
     line-height: 1.1;
-    margin: 10px 0;
-}
-
-.ai-badge {
-    display: inline-block;
-    padding: 8px 16px;
-    border: 1px solid #ffffff;
-    border-radius: 30px;
-    font-size: 0.7rem;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-}
-
-.hint {
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.6);
-    letter-spacing: 3px;
 }
 
 .flash-overlay {
     position: fixed;
     inset: 0;
     background: white;
-    z-index: 1000;
     opacity: 0;
+    transition: 0.5s;
     pointer-events: none;
-    transition: opacity 0.5s ease;
+    z-index: 999;
 }
 </style>
 </head>
@@ -143,12 +82,27 @@ body, html {
 
 <div class="grid-bg"></div>
 <div class="flash-overlay" id="flash"></div>
-<div class="floating-heart" id="heart"></div>
 
-<main class="content-wrapper" id="main-content">
-    <div class="ai-badge">HEART CORE ONLINE</div>
+<!-- ✅ SVG 직접 사용 (가장 안정적) -->
+<svg id="heart" viewBox="0 0 120 120">
+    <defs>
+        <pattern id="imgPattern" patternUnits="objectBoundingBox" width="1" height="1">
+            <image href="bg/bg2.png" width="120" height="120" preserveAspectRatio="xMidYMid slice"/>
+        </pattern>
+    </defs>
+
+    <path fill="url(#imgPattern)"
+          d="M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 
+             C10,27.1 22.1,15 37.5,15 
+             C46.2,15 54.55,19.05 60,25.45 
+             C65.45,19.05 73.8,15 82.5,15 
+             C97.9,15 110,27.1 110,42.5 
+             C110,61.4 93,76.8 67.25,100.15 
+             L60,106.75 Z"/>
+</svg>
+
+<main class="content-wrapper">
     <h1 class="huge-title">BEYOND<br>FUTURE<br>Lisa n Agnes</h1>
-    <div class="hint">TAP THE HEART TO ENTER</div>
 </main>
 
 <script>
@@ -158,8 +112,7 @@ const flash = document.getElementById('flash');
 let size = 120;
 let posX = Math.random() * (window.innerWidth - size);
 let posY = Math.random() * (window.innerHeight - size);
-
-let velX = 1.0;
+let velX = 1;
 let velY = 0.7;
 
 function moveHeart() {
@@ -180,24 +133,8 @@ moveHeart();
 heart.addEventListener('click', () => {
     flash.style.opacity = "1";
     setTimeout(() => {
-        window.location.href = 'pics.html';
+        window.location.href = "pics.html";
     }, 500);
-});
-
-/* 모바일 터치 대응 */
-document.addEventListener('touchmove', (e) => {
-    const touch = e.touches[0];
-    const moveX = (window.innerWidth / 2 - touch.clientX) / 30;
-    const moveY = (window.innerHeight / 2 - touch.clientY) / 30;
-    document.getElementById('main-content').style.transform =
-        `translate(-50%, -50%) rotateY(${moveX}deg) rotateX(${-moveY}deg)`;
-});
-
-document.addEventListener('mousemove', (e) => {
-    const moveX = (window.innerWidth / 2 - e.clientX) / 30;
-    const moveY = (window.innerHeight / 2 - e.clientY) / 30;
-    document.getElementById('main-content').style.transform =
-        `translate(-50%, -50%) rotateY(${moveX}deg) rotateX(${-moveY}deg)`;
 });
 </script>
 
