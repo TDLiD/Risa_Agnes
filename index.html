@@ -3,30 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 Future Web - 3D Activity</title>
+    <title>2026 Future Web - Lisa n Agnes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
         :root {
-            --bg: #050507;
             --accent: #00ffa3;
-            --accent-glow: rgba(0, 255, 163, 0.4);
+            --accent-glow: rgba(0, 255, 163, 0.3);
             --text: #ffffff;
         }
 
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background-color: var(--bg);
             color: var(--text);
             font-family: 'Inter', system-ui, sans-serif;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            /* 3D 공간 설정 */
-            perspective: 1200px; 
+            perspective: 1200px;
+            background-color: #050507; /* 기본 배경색 */
         }
 
-        /* 1. 역동적인 그리드 배경 */
+        /* 1. Granim.js 전용 캔버스 (배경) */
+        #canvas-image-blender {
+            position: absolute;
+            display: block;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -2;
+        }
+
+        /* 2. 기존 격자 배경 (오버레이) */
         .grid-bg {
             position: absolute;
             width: 200%; height: 200%;
@@ -37,8 +47,9 @@
             background-size: 50px 50px;
             transform: rotateX(60deg);
             animation: gridMove 20s linear infinite;
-            z-index: 0;
-            opacity: 0.2;
+            z-index: -1;
+            opacity: 0.15;
+            pointer-events: none;
         }
 
         @keyframes gridMove {
@@ -46,7 +57,7 @@
             to { background-position: 0 1000px; }
         }
 
-        /* 2. 배경 별 입자 레이어 */
+        /* 배경 별 입자 */
         .background-container {
             position: absolute;
             width: 100%; height: 100%;
@@ -57,14 +68,14 @@
 
         .dot {
             position: absolute;
-            width: 3px; height: 3px;
+            width: 2px; height: 2px;
             background: #fff;
             border-radius: 50%;
             box-shadow: 0 0 10px #fff;
-            opacity: 0.6;
+            opacity: 0.4;
         }
 
-        /* 3. 돌아다니는 네온 별 */
+        /* 돌아다니는 네온 별 */
         #clickable-star {
             position: fixed;
             z-index: 9999;
@@ -73,7 +84,6 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            pointer-events: auto;
             font-size: 60px;
             color: var(--accent);
             text-shadow: 0 0 30px var(--accent);
@@ -86,13 +96,12 @@
             filter: brightness(1.5);
         }
 
-        /* 4. 3D 타이틀 래퍼 */
+        /* 3D 콘텐츠 타이틀 */
         .content-wrapper {
             position: relative;
             z-index: 10;
             text-align: center;
             pointer-events: none;
-            /* 마우스에 반응할 3D 효과 */
             transform-style: preserve-3d;
             transition: transform 0.1s ease-out;
         }
@@ -100,15 +109,12 @@
         .huge-title {
             font-size: clamp(2.5rem, 10vw, 7rem);
             font-weight: 900;
-            line-height: 0.8;
+            line-height: 0.9;
             margin: 0;
             text-transform: uppercase;
             color: white;
-            /* 텍스트 깊이감 효과 */
-            text-shadow: 
-                0 1px 0 #ccc, 0 2px 0 #c5c5c5, 0 3px 0 #bbb,
-                0 10px 20px rgba(0,0,0,0.5);
-            transform: translateZ(50px); /* 텍스트가 공중에 뜬 느낌 */
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: translateZ(60px);
         }
 
         .ai-badge {
@@ -120,25 +126,26 @@
             font-weight: bold;
             color: var(--accent);
             margin-bottom: 30px;
-            background: rgba(0, 255, 163, 0.05);
-            box-shadow: 0 0 15px var(--accent-glow);
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 20px var(--accent-glow);
             letter-spacing: 2px;
-            transform: translateZ(30px);
+            transform: translateZ(40px);
         }
 
-        /* 마우스 오버 시 가이드 레이블 */
         .hint {
             position: absolute;
-            bottom: -50px;
+            bottom: -60px;
             width: 100%;
             font-size: 0.8rem;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.6);
             letter-spacing: 3px;
-            transform: translateZ(10px);
+            transform: translateZ(20px);
         }
     </style>
 </head>
 <body>
+
+    <canvas id="canvas-image-blender"></canvas>
 
     <div class="grid-bg"></div>
     <div id="clickable-star">★</div>
@@ -151,15 +158,32 @@
     </main>
 
     <script>
+        // 1. Granim.js 설정 (오로라 같은 부드러운 그라데이션)
+        var granimInstance = new Granim({
+            element: '#canvas-image-blender',
+            direction: 'diagonal',
+            isPausedWhenNotInView: true,
+            states : {
+                "default-state": {
+                    gradients: [
+                        ['#0a0a12', '#1a0f2e'], // 다크 블루 & 퍼플
+                        ['#0f172a', '#050507'], // 미드나잇 블루
+                        ['#1e1b4b', '#2e1065']  // 딥 바이올렛
+                    ],
+                    transitionSpeed: 7000
+                }
+            }
+        });
+
         const star = document.getElementById('clickable-star');
         const content = document.getElementById('main-content');
         const bgContainer = document.getElementById('bg-stars');
 
-        // 1. 별 이동 로직 (더 부드러운 속도)
+        // 2. 별 이동 로직
         let posX = Math.random() * (window.innerWidth - 70);
         let posY = Math.random() * (window.innerHeight - 70);
-        let velX = 0.8; 
-        let velY = 0.8;
+        let velX = 0.7; 
+        let velY = 0.7;
 
         function moveStar() {
             posX += velX;
@@ -172,41 +196,39 @@
         }
         moveStar();
 
-        // 2. 3D 마우스 패럴랙스 효과 (메인 타이틀 기울기)
+        // 3. 3D 마우스 패럴랙스
         document.addEventListener('mousemove', (e) => {
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 20;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 20;
-            
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
             content.style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
 
-            // 배경 별들도 약간씩 움직여 깊이감 부여
-            const bgMoveX = (e.pageX - window.innerWidth / 2) / 50;
-            const bgMoveY = (e.pageY - window.innerHeight / 2) / 50;
+            const bgMoveX = (e.pageX - window.innerWidth / 2) / 60;
+            const bgMoveY = (e.pageY - window.innerHeight / 2) / 60;
             bgContainer.style.transform = `translateX(${bgMoveX}px) translateY(${bgMoveY}px)`;
         });
 
-        // 3. 배경 입자(Stars) 생성
-        for (let i = 0; i < 80; i++) {
+        // 4. 배경 입자(Stars) 생성
+        for (let i = 0; i < 60; i++) {
             const dot = document.createElement('div');
             dot.className = 'dot';
             dot.style.left = `${Math.random() * 100}%`;
             dot.style.top = `${Math.random() * 100}%`;
-            // 입자마다 다른 깊이감 부여
-            dot.style.transform = `translateZ(${Math.random() * -500}px)`;
+            dot.style.transform = `translateZ(${Math.random() * -400}px)`;
             bgContainer.appendChild(dot);
         }
 
-        // 4. 별 클릭 이벤트
+        // 5. 별 클릭 이벤트
         star.addEventListener('click', () => {
-            star.style.transform = "scale(5) rotate(180deg)";
+            star.style.transform = "scale(8) rotate(360deg)";
             star.style.opacity = "0";
+            star.style.transition = "all 0.6s ease-in";
             setTimeout(() => {
                 window.location.href = 'pics.html';
-            }, 500);
+            }, 600);
         });
 
-        // 5. 메시지 순환
-        const messages = ["LISA", "AGNES", "LISA N AGNES"];
+        // 6. 메시지 순환
+        const messages = ["LISA", "AGNES", "LISA N AGNES", "FUTURE WEB"];
         setInterval(() => {
             const msg = messages[Math.floor(Math.random() * messages.length)];
             document.getElementById('ai-msg').innerText = msg;

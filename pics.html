@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 Future Gallery - 3D Earth Orbit</title>
+    <title>2026 Future Gallery - Lisa n Agnes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
         :root {
             --accent: #00ffa3;
@@ -16,20 +17,27 @@
             color: white;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
-            /* 배경 이미지 설정 */
-            background: url('bg/bg.jpg') no-repeat center center fixed;
-            background-size: cover;
-            perspective: 2000px; /* 모든 사진이 한눈에 들어오는 원근감 */
+            background-color: #050507;
+            perspective: 2000px;
         }
 
-        /* 배경을 조금 어둡게 하여 사진이 돋보이게 함 */
+        /* 1. Granim 배경용 캔버스 */
+        #canvas-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2;
+        }
+
+        /* 2. 배경 오버레이 (약간 어둡게 처리하여 몰입감 상승) */
         body::before {
             content: "";
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.3);
             z-index: -1;
+            pointer-events: none;
         }
 
         /* 🌏 자전하는 메인 컨테이너 */
@@ -38,8 +46,7 @@
             top: 50%; left: 50%;
             width: 0; height: 0;
             transform-style: preserve-3d;
-            /* 무한 자전 애니메이션 */
-            animation: rotateEarth 25s linear infinite;
+            animation: rotateEarth 30s linear infinite;
         }
 
         @keyframes rotateEarth {
@@ -57,17 +64,18 @@
             border-radius: 12px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             cursor: pointer;
-            /* 뒷면에서도 보이게 하여 24개 상시 노출 */
             backface-visibility: visible; 
-            transition: border 0.3s, box-shadow 0.3s, filter 0.3s;
-            filter: brightness(0.8);
+            transition: border 0.3s, box-shadow 0.3s, filter 0.3s, transform 0.3s;
+            filter: brightness(0.7);
         }
 
         .photo-card:hover {
-            filter: brightness(1.2) scale(1.1);
+            filter: brightness(1.2);
             border-color: var(--accent);
             box-shadow: 0 0 30px var(--glow);
             z-index: 10000 !important;
+            /* 호버 시 구의 중심에서 바깥쪽으로 살짝 튀어나오는 효과 */
+            transform: scale(1.2) !important; 
         }
 
         /* 확대 모달 */
@@ -87,7 +95,7 @@
         #modal img {
             max-width: 85%;
             max-height: 85%;
-            border: 3px solid var(--accent);
+            border: 2px solid var(--accent);
             box-shadow: 0 0 50px var(--glow);
             transform: scale(0.8);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -98,42 +106,64 @@
         /* UI */
         .nav { position: fixed; top: 20px; left: 20px; z-index: 10000; }
         .btn {
-            padding: 10px 20px;
+            padding: 10px 22px;
             border: 1px solid var(--accent);
             color: var(--accent);
             text-decoration: none;
-            background: rgba(0,0,0,0.6);
-            border-radius: 4px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 30px;
             font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            background: var(--accent);
+            color: black;
+            box-shadow: 0 0 20px var(--glow);
         }
     </style>
 </head>
 <body>
 
-    <nav class="nav"><a href="index.html" class="btn">← BACK</a></nav>
+    <canvas id="canvas-bg"></canvas>
 
-    <div id="sphere-scene">
-        </div>
+    <nav class="nav"><a href="index.html" class="btn">← EXIT GALLERY</a></nav>
+
+    <div id="sphere-scene"></div>
 
     <div id="modal" onclick="closeModal()">
         <img id="modal-img" src="" alt="">
     </div>
 
 <script>
+    // 1. Granim.js 배경 설정 (index.html과 통일감 있는 오로라 효과)
+    var granimInstance = new Granim({
+        element: '#canvas-bg',
+        direction: 'top-bottom',
+        isPausedWhenNotInView: true,
+        states : {
+            "default-state": {
+                gradients: [
+                    ['#050507', '#1a0f2e'],
+                    ['#0f172a', '#050507'],
+                    ['#1e1b4b', '#0a0a12']
+                ],
+                transitionSpeed: 8000
+            }
+        }
+    });
+
     const scene = document.getElementById('sphere-scene');
     const modal = document.getElementById('modal');
     const modalImg = document.getElementById('modal-img');
     
-    // 1. 전체 이미지 개수를 37로 수정
     const count = 37; 
-    const radius = 420; 
+    const radius = 450; // 구체 반지름 살짝 확대
 
     for (let i = 0; i < count; i++) {
         const index = i + 1;
         const num = String(index).padStart(3, '0');
-        
-        // 2. 인덱스에 따라 확장자를 jpg 또는 png로 선택
-        // 1~19번까지는 jpg, 20번부터는 png
         const extension = index <= 19 ? 'jpg' : 'png';
         const src = `images/image-${num}.${extension}`;
         
@@ -141,7 +171,7 @@
         img.src = src;
         img.className = 'photo-card';
         
-        // 피보나치 구체 좌표 계산 (균등 배치)
+        // 피보나치 구체 좌표 계산
         const phi = Math.acos(-1 + (2 * i) / count);
         const theta = Math.sqrt(count * Math.PI) * phi;
 
@@ -149,8 +179,9 @@
         const y = radius * Math.sin(phi) * Math.sin(theta);
         const z = radius * Math.cos(phi);
 
-        // 구의 중심을 바라보는 회전 각도 계산
-        img.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
+        // 기본 변환 설정 (회전 포함)
+        const baseTransform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
+        img.style.transform = baseTransform;
 
         img.onclick = (e) => {
             e.stopPropagation();
@@ -160,17 +191,23 @@
         scene.appendChild(img);
     }
 
+    function openModal(src) {
+        modalImg.src = src;
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
 
-        function openModal(src) {
-            modalImg.src = src;
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('active'), 10);
-        }
+    function closeModal() {
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
 
-        function closeModal() {
-            modal.classList.remove('active');
-            setTimeout(() => modal.style.display = 'none', 300);
-        }
-    </script>
+    // 마우스 이동에 따른 미세한 시점 변화 (패럴랙스)
+    document.addEventListener('mousemove', (e) => {
+        const moveX = (e.pageX - window.innerWidth / 2) / 100;
+        const moveY = (e.pageY - window.innerHeight / 2) / 100;
+        scene.parentElement.style.perspectiveOrigin = `${50 + moveX}% ${50 + moveY}%`;
+    });
+</script>
 </body>
 </html>
