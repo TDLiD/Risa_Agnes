@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 Future Web - Lisa n Agnes</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --accent: #ffffff;
             --text: #ffffff;
+            --heart-glow: #ff4d6d; /* 네온 핑크 광채 */
         }
 
         body, html {
@@ -21,7 +21,7 @@
             touch-action: none;
         }
 
-        /* 배경 그리드 (최하단) */
+        /* 배경 그리드 */
         .grid-bg {
             position: fixed;
             width: 200vw; height: 200vh;
@@ -33,26 +33,46 @@
             transform: rotateX(60deg);
             z-index: 0;
             opacity: 0.3;
-            pointer-events: none;
         }
 
-        /* Three.js 캔버스 (중간층) */
-        #canvas-container {
+        /* 이미지 마스킹 하트 오브젝트 */
+        .floating-heart {
             position: fixed;
+            width: 120px; /* 크기를 50px에서 120px로 대폭 확대 */
+            height: 120px;
+            z-index: 5;
+            cursor: pointer;
+            /* 하트 모양으로 이미지 자르기 */
+            clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
+            /* SVG 경로 좌표를 120px 크기에 맞게 스케일링 */
+            clip-path:  path('M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z');
+            
+            background-image: url('bg/bg2.png');
+            background-size: cover;
+            background-position: center;
+            
+            box-shadow: 0 0 25px var(--heart-glow); /* 하트 광채 */
+            animation: pulse 1.5s infinite ease-in-out;
+            will-change: left, top;
+        }
+
+        /* 하트 외곽선 효과를 위한 가상 요소 */
+        .floating-heart::after {
+            content: '';
+            position: absolute;
             top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1; /* 그리드보다는 위, 텍스트보다는 아래 */
+            width: 100%; height: 100%;
+            border: 2px solid rgba(255, 77, 109, 0.5);
+            clip-path: inherit;
             pointer-events: none;
         }
 
-        #three-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 10px var(--heart-glow)); }
+            50% { transform: scale(1.1); filter: brightness(1.2) drop-shadow(0 0 20px var(--heart-glow)); }
         }
 
-        /* 텍스트 콘텐츠 (상단층) */
+        /* 텍스트 콘텐츠 */
         .content-wrapper {
             position: absolute;
             top: 50%; left: 50%;
@@ -68,11 +88,12 @@
             font-weight: 900;
             text-transform: uppercase;
             color: #ffffff;
-            text-shadow: 0 0 20px rgba(0,0,0,1); /* 하트와 겹칠 때 가독성을 위해 그림자 강화 */
+            text-shadow: 0 0 20px rgba(0,0,0,0.9);
             line-height: 1.1;
             margin: 10px 0;
         }
 
+        /* 나머지 스타일 동일... */
         .ai-badge {
             display: inline-block;
             padding: 8px 16px;
@@ -91,26 +112,24 @@
             letter-spacing: 3px;
         }
 
-        /* 클릭 히트박스 (최상단) */
-        #star-hitbox {
+        .flash-overlay {
             position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: white;
             z-index: 1000;
-            width: 100px; height: 100px; /* 클릭 편의를 위해 약간 키움 */
-            cursor: pointer;
-            pointer-events: auto;
-            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
         }
     </style>
 </head>
 <body>
 
     <div class="grid-bg"></div>
+    <div class="flash-overlay" id="flash"></div>
     
-    <div id="canvas-container">
-        <canvas id="three-canvas"></canvas>
-    </div>
-
-    <div id="star-hitbox"></div>
+    <div class="floating-heart" id="heart"></div>
 
     <main class="content-wrapper" id="main-content">
         <div class="ai-badge">HEART CORE ONLINE</div>
@@ -119,122 +138,45 @@
     </main>
 
     <script>
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const heart = document.getElementById('heart');
+        const flash = document.getElementById('flash');
         
-        const renderer = new THREE.WebGLRenderer({ 
-            canvas: document.getElementById('three-canvas'), 
-            alpha: true, 
-            antialias: true,
-            precision: "highp" // 모바일 정밀도 향상
-        });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        // 텍스트 로딩 확인용 로그
-        const textureLoader = new THREE.TextureLoader();
-        const heartTexture = textureLoader.load('bg/bg2.png', 
-            () => { console.log("하트 텍스처 로드 성공"); },
-            undefined,
-            () => { console.warn("하트 텍스처 로드 실패 - 기본 색상으로 대체합니다."); }
-        );
-
-        function createHeartGeometry() {
-            const shape = new THREE.Shape();
-            const x = 0, y = 0;
-            shape.moveTo( x + 2.5, y + 2.5 );
-            shape.bezierCurveTo( x + 2.5, y + 2.5, x + 2.0, y, x, y );
-            shape.bezierCurveTo( x - 3.0, y, x - 3.0, y + 3.5, x - 3.0, y + 3.5 );
-            shape.bezierCurveTo( x - 3.0, y + 5.5, x - 1.0, y + 7.7, x + 2.5, y + 9.5 );
-            shape.bezierCurveTo( x + 6.0, y + 7.7, x + 8.0, y + 5.5, x + 8.0, y + 3.5 );
-            shape.bezierCurveTo( x + 8.0, y + 3.5, x + 8.0, y, x + 5.0, y );
-            shape.bezierCurveTo( x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5 );
-
-            const extrudeSettings = { depth: 1.2, bevelEnabled: true, bevelThickness: 0.4, bevelSize: 0.4, bevelSegments: 6 };
-            const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            geo.center();
-            geo.rotateZ(Math.PI);
-            return geo;
-        }
-
-        const geometry = createHeartGeometry();
-        // MeshPhysicalMaterial 대신 더 안정적인 MeshStandardMaterial 사용
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff, // 텍스처 없을 때를 대비한 기본색
-            map: heartTexture,
-            transparent: true,
-            metalness: 0.2,
-            roughness: 0.3,
-            emissive: 0xffffff,
-            emissiveIntensity: 0.1
-        });
+        let posX = Math.random() * (window.innerWidth - 120);
+        let posY = Math.random() * (window.innerHeight - 120);
         
-        const heartMesh = new THREE.Mesh(geometry, material);
-        heartMesh.scale.set(0.4, 0.4, 0.4); // 1/2 사이즈 반영
-        scene.add(heartMesh);
+        // 이동 속도 (부드럽게 유지)
+        let velX = 1.0; 
+        let velY = 0.7; 
+        const size = 120; // 수정된 크기 반영
 
-        // 조명 강화
-        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-        const pointLight = new THREE.PointLight(0xffffff, 1.2);
-        pointLight.position.set(5, 5, 10);
-        scene.add(pointLight);
-
-        camera.position.z = 12;
-
-        let posX = window.innerWidth / 2;
-        let posY = window.innerHeight / 2;
-        let velX = 0.4; // 속도 줄임
-        let velY = 0.3; 
-        
-        const hitbox = document.getElementById('star-hitbox');
-        const boxSize = 50; 
-
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            heartMesh.rotation.y += 0.015;
-            heartMesh.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
-            
+        function moveHeart() {
             posX += velX;
             posY += velY;
 
-            // 벽 튕기기 로직
-            if (posX > window.innerWidth - boxSize || posX < boxSize) velX *= -1;
-            if (posY > window.innerHeight - boxSize || posY < boxSize) velY *= -1;
+            if (posX + size > window.innerWidth || posX < 0) velX *= -1;
+            if (posY + size > window.innerHeight || posY < 0) velY *= -1;
 
-            // 3D 공간 좌표 변환
-            const vector = new THREE.Vector3((posX / window.innerWidth) * 2 - 1, -(posY / window.innerHeight) * 2 + 1, 0.5);
-            vector.unproject(camera);
-            const dir = vector.sub(camera.position).normalize();
-            const distance = -camera.position.z / dir.z;
-            const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-            heartMesh.position.copy(pos);
+            heart.style.left = posX + 'px';
+            heart.style.top = posY + 'px';
 
-            // 힛박스 동기화
-            hitbox.style.left = (posX - boxSize) + 'px';
-            hitbox.style.top = (posY - boxSize) + 'px';
-
-            renderer.render(scene, camera);
+            requestAnimationFrame(moveHeart);
         }
-        animate();
 
-        // 창 크기 조절 대응
-        window.addEventListener('resize', () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            renderer.setSize(w, h);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            // 위치 리셋 방지용
-            posX = w / 2;
-            posY = h / 2;
+        moveHeart();
+
+        heart.addEventListener('click', () => {
+            flash.style.opacity = "1";
+            setTimeout(() => {
+                window.location.href = 'pics.html';
+            }, 500);
         });
 
-        // 클릭 이벤트
-        hitbox.addEventListener('click', () => {
-            document.body.style.transition = "background 0.5s ease";
-            document.body.style.backgroundColor = "white";
-            setTimeout(() => { window.location.href = 'pics.html'; }, 400);
+        // 자이로 효과 (터치/마우스 이동 시 배경 살짝 흔들림)
+        document.addEventListener('mousemove', (e) => {
+            const moveX = (window.innerWidth / 2 - e.clientX) / 30;
+            const moveY = (window.innerHeight / 2 - e.clientY) / 30;
+            document.getElementById('main-content').style.transform = 
+                `translate(-50%, -50%) rotateY(${moveX}deg) rotateX(${-moveY}deg)`;
         });
     </script>
 </body>
