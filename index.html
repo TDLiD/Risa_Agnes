@@ -2,31 +2,54 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 Future Web - Lisa n Agnes</title>
     <style>
-        :root { --heart-glow: #ff4d6d; --lightning-color: #00ffa3; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; }
+        :root { --heart-glow: #ff4d6d; --lightning-color: #00ffa3; --border-size: 80px; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* 배경 캔버스 */
         #bg-canvas { position: fixed; inset: 0; z-index: 0; }
-        
-        /* 기존 그리드 배경 (살짝 유지하여 깊이감 부여) */
         .grid-bg { position: fixed; inset: -50%; width: 200vw; height: 200vh; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; transform: rotateX(60deg); opacity: 0.2; z-index: 1; pointer-events: none; }
 
-        #heart { position: fixed; width: 120px; height: 120px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        /* 📌 GIF 테두리 레이아웃 */
+        .gif-border { position: fixed; z-index: 5; pointer-events: none; display: flex; overflow: hidden; gap: 5px; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+        .gif-border img { width: var(--border-size); height: var(--border-size); object-fit: cover; border: 1px solid rgba(0, 255, 163, 0.3); }
+
+        .top-bar { top: 0; left: 0; width: 100%; height: var(--border-size); flex-direction: row; }
+        .bottom-bar { bottom: 0; left: 0; width: 100%; height: var(--border-size); flex-direction: row-reverse; }
+        .left-bar { top: 0; left: 0; width: var(--border-size); height: 100%; flex-direction: column-reverse; }
+        .right-bar { top: 0; right: 0; width: var(--border-size); height: 100%; flex-direction: column; }
+
+        /* 애니메이션 효과 */
+        .marquee { display: flex; gap: 5px; animation: scroll linear infinite; }
+        .top-bar .marquee { animation-duration: 40s; }
+        .bottom-bar .marquee { animation-duration: 45s; }
+        .left-bar .marquee { flex-direction: column; animation: scroll-v linear infinite; animation-duration: 50s; }
+        .right-bar .marquee { flex-direction: column; animation: scroll-v-rev linear infinite; animation-duration: 35s; }
+
+        @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes scroll-v { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+        @keyframes scroll-v-rev { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+
+        #heart { position: fixed; width: 100px; height: 100px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; touch-action: none; will-change: transform, left, top; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
         .content-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 10; pointer-events: none; }
-        .huge-title { font-size: clamp(2rem, 10vw, 6rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -2px; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .huge-title { font-size: clamp(2rem, 8vw, 6rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,163,0.5); }
         
-        .flash-overlay { position: fixed; inset: 0; background: white; opacity: 0; transition: 0.5s; pointer-events: none; z-index: 999; }
+        .flash-overlay { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 999; transition: opacity 0.4s ease-in; }
+        .flash-overlay.active { opacity: 1; }
     </style>
 </head>
 <body>
     <canvas id="bg-canvas"></canvas>
     <div class="grid-bg"></div>
     <div class="flash-overlay" id="flash"></div>
+
+    <div class="gif-border top-bar" id="border-top"></div>
+    <div class="gif-border bottom-bar" id="border-bottom"></div>
+    <div class="gif-border left-bar" id="border-left"></div>
+    <div class="gif-border right-bar" id="border-right"></div>
 
     <svg id="heart" viewBox="0 0 120 120">
         <defs>
@@ -42,9 +65,31 @@
     </main>
 
     <script>
-        /** 배경 효과: 소용돌이 + 번개 **/
+        // 📌 GIF 리스트 생성 및 자동 배치
+        const gifList = Array.from({length: 31}, (_, i) => `bg/lisa/image-${String(i+1).padStart(3, '0')}.gif`);
+        
+        function createMarquee(targetId, isVertical = false) {
+            const container = document.getElementById(targetId);
+            const marquee = document.createElement('div');
+            marquee.className = 'marquee';
+            
+            // 리스트를 2번 반복하여 무한 루프 구현
+            const fullList = [...gifList, ...gifList];
+            fullList.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.loading = "lazy";
+                marquee.appendChild(img);
+            });
+            container.appendChild(marquee);
+        }
+
+        ['border-top', 'border-bottom'].forEach(id => createMarquee(id));
+        ['border-left', 'border-right'].forEach(id => createMarquee(id, true));
+
+        // 기존 캔버스/애니메이션 스크립트
         const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false });
         let particles = [];
         let width, height;
 
@@ -56,19 +101,17 @@
         resize();
 
         class Particle {
-            constructor() {
-                this.reset();
-            }
+            constructor() { this.reset(); }
             reset() {
                 this.angle = Math.random() * Math.PI * 2;
-                this.radius = Math.random() * width * 0.5;
-                this.speed = Math.random() * 0.02 + 0.005;
-                this.size = Math.random() * 2;
-                this.color = `hsla(${160 + Math.random() * 40}, 100%, 50%, ${Math.random()})`;
+                this.radius = Math.random() * (width > height ? width : height) * 0.5;
+                this.speed = Math.random() * 0.01 + 0.002;
+                this.size = Math.random() * 1.5 + 0.5;
+                this.color = `hsla(${160 + Math.random() * 40}, 80%, 60%, ${Math.random() * 0.4 + 0.2})`;
             }
             update() {
                 this.angle += this.speed;
-                this.radius -= 0.5; // 소용돌이 중심으로 빨려 들어가는 효과
+                this.radius -= 0.5;
                 if (this.radius <= 0) this.reset();
             }
             draw() {
@@ -81,62 +124,39 @@
             }
         }
 
-        // 번개 효과 함수
-        function drawLightning() {
-            if (Math.random() > 0.95) { // 5% 확률로 번개 발생
-                ctx.strokeStyle = '#00ffa3';
-                ctx.lineWidth = 2;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#00ffa3';
-                ctx.beginPath();
-                let x = Math.random() * width;
-                let y = 0;
-                ctx.moveTo(x, y);
-                for(let i=0; i<10; i++) {
-                    x += (Math.random() - 0.5) * 100;
-                    y += height / 10;
-                    ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-            }
-        }
-
-        for (let i = 0; i < 300; i++) particles.push(new Particle());
+        const particleCount = width < 768 ? 100 : 200;
+        for (let i = 0; i < particleCount; i++) particles.push(new Particle());
 
         function animate() {
-            // 잔상 효과를 위해 투명도 있는 검은색으로 덮음
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.fillRect(0, 0, width, height);
-            
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-
-            drawLightning();
+            particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(animate);
         }
         animate();
 
-        /** 기존 하트 로직 **/
+        // 하트 이동 및 클릭 로직
         const heart = document.getElementById('heart'), flash = document.getElementById('flash');
-        let hSize = 120, posX = Math.random()*(window.innerWidth-hSize), posY = Math.random()*(window.innerHeight-hSize), velX = 1.5, velY = 1.2;
+        let hSize = 100;
+        let posX = Math.random() * (window.innerWidth - hSize);
+        let posY = Math.random() * (window.innerHeight - hSize);
+        let velX = 1.2, velY = 1.0;
 
         function moveHeart() {
             posX += velX; posY += velY;
-            if (posX + hSize > window.innerWidth || posX < 0) velX *= -1;
-            if (posY + hSize > window.innerHeight || posY < 0) velY *= -1;
-            heart.style.left = posX + 'px'; 
-            heart.style.top = posY + 'px';
+            const pad = 90; // 테두리 GIF 영역 안으로 튕기게 설정
+            if (posX + hSize > window.innerWidth - pad || posX < pad) velX *= -1;
+            if (posY + hSize > window.innerHeight - pad || posY < pad) velY *= -1;
+            heart.style.left = `${posX}px`;
+            heart.style.top = `${posY}px`;
             requestAnimationFrame(moveHeart);
         }
         moveHeart();
 
-        heart.onclick = () => {
-            flash.style.opacity = "1";
-            setTimeout(() => location.href = "pics.html", 500);
-        };
+        heart.addEventListener('click', () => {
+            flash.classList.add('active');
+            setTimeout(() => { window.location.href = "pics.html"; }, 400);
+        });
     </script>
 </body>
 </html>
