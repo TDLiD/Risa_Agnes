@@ -8,8 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --accent: #00ffa3;
-            --accent-glow: rgba(0, 255, 163, 0.3);
+            --accent: #ff4d6d;
+            --accent-glow: rgba(255, 77, 109, 0.3);
             --text: #ffffff;
         }
 
@@ -40,11 +40,10 @@
             pointer-events: none;
         }
 
-        /* 클릭 영역 최적화: 더 크게 잡아서 클릭이 잘 되도록 함 */
         #star-hitbox {
             position: fixed;
             z-index: 10000;
-            width: 120px; height: 120px;
+            width: 160px; height: 160px;
             cursor: pointer;
             pointer-events: auto;
             border-radius: 50%;
@@ -82,6 +81,8 @@
             font-weight: 900;
             text-transform: uppercase;
             text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            line-height: 0.9;
+            margin: 20px 0;
         }
 
         .ai-badge {
@@ -91,8 +92,9 @@
             border-radius: 30px;
             color: var(--accent);
             margin-bottom: 30px;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.4);
             box-shadow: 0 0 20px var(--accent-glow);
+            backdrop-filter: blur(5px);
         }
 
         .hint {
@@ -105,14 +107,15 @@
 </head>
 <body>
 
+    <div class="grid-bg"></div>
     <canvas id="canvas-image-blender"></canvas>
     <canvas id="three-canvas"></canvas>
     <div id="star-hitbox"></div>
 
     <main class="content-wrapper" id="main-content">
-        <div class="ai-badge" id="ai-msg">CONNECTING...</div>
+        <div class="ai-badge" id="ai-msg">HEART CORE ONLINE</div>
         <h1 class="huge-title">BEYOND<br>FUTURE<br>Lisa n Agnes</h1>
-        <div class="hint">CATCH THE STAR TO ENTER</div>
+        <div class="hint">CATCH THE HEART TO ENTER</div>
     </main>
 
     <script>
@@ -128,65 +131,107 @@
             }
         });
 
-        // 2. Three.js 설정 (3D 별 모양 구현)
+        // 2. Three.js 설정
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: document.getElementById('three-canvas'), 
+            alpha: true, 
+            antialias: true 
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
 
-        // 뾰족한 별 모양 생성함수
-        function createStarGeometry() {
+        const textureLoader = new THREE.TextureLoader();
+        const heartTexture = textureLoader.load('bg/bg2.png');
+        
+        // 텍스처 설정 최적화
+        heartTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        heartTexture.center.set(0.5, 0.5);
+
+        // 하트 모양 생성 (똑바로 서 있도록 좌표 수정)
+        function createHeartGeometry() {
+            const x = 0, y = 0;
             const shape = new THREE.Shape();
-            const points = 5;
-            const innerRadius = 0.4;
-            const outerRadius = 1;
-            for (let i = 0; i < points * 2; i++) {
-                const radius = i % 2 === 0 ? outerRadius : innerRadius;
-                const currAngle = (i / points) * Math.PI;
-                if (i === 0) shape.moveTo(Math.cos(currAngle) * radius, Math.sin(currAngle) * radius);
-                else shape.lineTo(Math.cos(currAngle) * radius, Math.sin(currAngle) * radius);
+            // 좌표를 반전시켜서 처음부터 똑바로 생성되게 함
+            shape.moveTo(x, y - 0.5);
+            shape.bezierCurveTo(x, y - 0.5, x + 0.5, y - 1.5, x + 1.5, y - 1.5);
+            shape.bezierCurveTo(x + 3, y - 1.5, x + 3, y + 0.7, x + 3, y + 0.7);
+            shape.bezierCurveTo(x + 3, y + 1.5, x + 1.5, y + 3, x, y + 4);
+            shape.bezierCurveTo(x - 1.5, y + 3, x - 3, y + 1.5, x - 3, y + 0.7);
+            shape.bezierCurveTo(x - 3, y + 0.7, x - 3, y - 1.5, x - 1.5, y - 1.5);
+            shape.bezierCurveTo(x - 0.5, y - 1.5, x, y - 0.5, x, y - 0.5);
+
+            const extrudeSettings = { 
+                depth: 0.8, 
+                bevelEnabled: true, 
+                bevelThickness: 0.2, 
+                bevelSize: 0.2, 
+                bevelSegments: 5 
+            };
+            
+            const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geo.center();
+
+            // 중요: 이미지가 하트 중심에 선명하게 박히도록 UV 좌표 재계산
+            const pos = geo.attributes.position;
+            const bBox = geo.boundingBox;
+            const size = new THREE.Vector3();
+            bBox.getSize(size);
+            
+            const uvs = [];
+            for(let i = 0; i < pos.count; i++) {
+                let u = (pos.getX(i) - bBox.min.x) / size.x;
+                let v = (pos.getY(i) - bBox.min.y) / size.y;
+                uvs.push(u, v);
             }
-            const extrudeSettings = { depth: 0.4, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 3 };
-            return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+
+            return geo;
         }
 
-        const geometry = createStarGeometry();
+        const geometry = createHeartGeometry();
+        
         const material = new THREE.MeshPhysicalMaterial({
-            color: 0x00ffa3,
-            emissive: 0x00ffa3,
-            emissiveIntensity: 0.5,
-            metalness: 0.8,
-            roughness: 0.1,
-            flatShading: true
+            map: heartTexture,
+            color: 0xffffff,
+            metalness: 0.1,
+            roughness: 0.3,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.1, // 이미지 본연의 색상을 위해 조절
+            transparent: true
         });
-        const starMesh = new THREE.Mesh(geometry, material);
-        scene.add(starMesh);
+        
+        const heartMesh = new THREE.Mesh(geometry, material);
+        scene.add(heartMesh);
 
-        const light = new THREE.PointLight(0xffffff, 2, 50);
-        light.position.set(5, 5, 5);
+        // 조명 보강
+        const light = new THREE.DirectionalLight(0xffffff, 1.2);
+        light.position.set(0, 0, 10);
         scene.add(light);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-        camera.position.z = 5;
+        camera.position.z = 8;
 
-        // 이동 및 클릭 변수 (속도 늦춤)
         let posX = Math.random() * window.innerWidth;
         let posY = Math.random() * window.innerHeight;
-        let velX = 0.8; // 속도 감소
-        let velY = 0.6; // 속도 감소
+        let velX = 1.2; 
+        let velY = 0.9; 
         const hitbox = document.getElementById('star-hitbox');
 
         function animate() {
             requestAnimationFrame(animate);
-            starMesh.rotation.z += 0.01;
-            starMesh.rotation.y += 0.02;
+            
+            const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.06;
+            heartMesh.scale.set(pulse, pulse, pulse);
+            
+            // 이미지가 잘 보이도록 Y축 회전을 부드럽게 유지
+            heartMesh.rotation.y += 0.015;
 
             posX += velX;
             posY += velY;
-            if (posX > window.innerWidth - 60 || posX < 60) velX *= -1;
-            if (posY > window.innerHeight - 60 || posY < 60) velY *= -1;
+            if (posX > window.innerWidth - 80 || posX < 80) velX *= -1;
+            if (posY > window.innerHeight - 80 || posY < 80) velY *= -1;
 
-            // 월드 좌표 변환 보정
             const vector = new THREE.Vector3(
                 (posX / window.innerWidth) * 2 - 1,
                 -(posY / window.innerHeight) * 2 + 1,
@@ -196,32 +241,28 @@
             const dir = vector.sub(camera.position).normalize();
             const distance = -camera.position.z / dir.z;
             const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-            starMesh.position.copy(pos);
+            heartMesh.position.copy(pos);
 
-            // 히트박스 위치 동기화
-            hitbox.style.left = (posX - 60) + 'px';
-            hitbox.style.top = (posY - 60) + 'px';
+            hitbox.style.left = (posX - 80) + 'px';
+            hitbox.style.top = (posY - 80) + 'px';
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // 클릭 이벤트 (확실한 이동)
-        hitbox.addEventListener('click', (e) => {
-            console.log("Star Clicked!");
+        hitbox.addEventListener('click', () => {
             velX = 0; velY = 0;
-            starMesh.scale.set(15, 15, 15);
-            document.body.style.transition = "background 0.5s";
+            heartMesh.scale.set(20, 20, 20);
+            document.body.style.transition = "background 0.6s ease-in-out";
             document.body.style.background = "white";
             setTimeout(() => {
                 window.location.href = 'pics.html';
-            }, 500);
+            }, 600);
         });
 
-        // 마우스 패럴랙스
         document.addEventListener('mousemove', (e) => {
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 30;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 30;
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
             document.getElementById('main-content').style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
         });
 
