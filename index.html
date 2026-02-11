@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 Future Web - Lisa n Agnes</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --accent: #00ffa3;
@@ -18,29 +19,41 @@
             color: var(--text);
             font-family: 'Inter', system-ui, sans-serif;
             overflow: hidden;
+            background-color: #050507;
             display: flex;
             align-items: center;
             justify-content: center;
-            perspective: 1200px;
-            background-color: #050507; /* 기본 배경색 */
         }
 
-        /* 1. Granim.js 전용 캔버스 (배경) */
         #canvas-image-blender {
             position: absolute;
-            display: block;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
+            width: 100%; height: 100%;
+            top: 0; left: 0;
             z-index: -2;
         }
 
-        /* 2. 기존 격자 배경 (오버레이) */
+        #three-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* 클릭 영역 최적화: 더 크게 잡아서 클릭이 잘 되도록 함 */
+        #star-hitbox {
+            position: fixed;
+            z-index: 10000;
+            width: 120px; height: 120px;
+            cursor: pointer;
+            pointer-events: auto;
+            border-radius: 50%;
+            display: block;
+        }
+
         .grid-bg {
             position: absolute;
             width: 200%; height: 200%;
-            top: -50%; left: -50%;
             background-image: 
                 linear-gradient(var(--accent-glow) 1px, transparent 1px),
                 linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
@@ -49,7 +62,6 @@
             animation: gridMove 20s linear infinite;
             z-index: -1;
             opacity: 0.15;
-            pointer-events: none;
         }
 
         @keyframes gridMove {
@@ -57,64 +69,19 @@
             to { background-position: 0 1000px; }
         }
 
-        /* 배경 별 입자 */
-        .background-container {
-            position: absolute;
-            width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none;
-            transform-style: preserve-3d;
-        }
-
-        .dot {
-            position: absolute;
-            width: 2px; height: 2px;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #fff;
-            opacity: 0.4;
-        }
-
-        /* 돌아다니는 네온 별 */
-        #clickable-star {
-            position: fixed;
-            z-index: 9999;
-            width: 70px; height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 60px;
-            color: var(--accent);
-            text-shadow: 0 0 30px var(--accent);
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            user-select: none;
-        }
-
-        #clickable-star:hover {
-            transform: scale(1.4) rotate(15deg);
-            filter: brightness(1.5);
-        }
-
-        /* 3D 콘텐츠 타이틀 */
         .content-wrapper {
             position: relative;
             z-index: 10;
             text-align: center;
             pointer-events: none;
             transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
         }
 
         .huge-title {
             font-size: clamp(2.5rem, 10vw, 7rem);
             font-weight: 900;
-            line-height: 0.9;
-            margin: 0;
             text-transform: uppercase;
-            color: white;
             text-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transform: translateZ(60px);
         }
 
         .ai-badge {
@@ -122,34 +89,25 @@
             padding: 10px 20px;
             border: 2px solid var(--accent);
             border-radius: 30px;
-            font-size: 0.9rem;
-            font-weight: bold;
             color: var(--accent);
             margin-bottom: 30px;
             background: rgba(0, 0, 0, 0.2);
             box-shadow: 0 0 20px var(--accent-glow);
-            letter-spacing: 2px;
-            transform: translateZ(40px);
         }
 
         .hint {
-            position: absolute;
-            bottom: -60px;
-            width: 100%;
+            margin-top: 20px;
             font-size: 0.8rem;
             color: rgba(255,255,255,0.6);
             letter-spacing: 3px;
-            transform: translateZ(20px);
         }
     </style>
 </head>
 <body>
 
     <canvas id="canvas-image-blender"></canvas>
-
-    <div class="grid-bg"></div>
-    <div id="clickable-star">★</div>
-    <div class="background-container" id="bg-stars"></div>
+    <canvas id="three-canvas"></canvas>
+    <div id="star-hitbox"></div>
 
     <main class="content-wrapper" id="main-content">
         <div class="ai-badge" id="ai-msg">CONNECTING...</div>
@@ -158,81 +116,120 @@
     </main>
 
     <script>
-        // 1. Granim.js 설정 (오로라 같은 부드러운 그라데이션)
+        // 1. 배경 그라데이션
         var granimInstance = new Granim({
             element: '#canvas-image-blender',
             direction: 'diagonal',
-            isPausedWhenNotInView: true,
             states : {
                 "default-state": {
-                    gradients: [
-                        ['#0a0a12', '#1a0f2e'], // 다크 블루 & 퍼플
-                        ['#0f172a', '#050507'], // 미드나잇 블루
-                        ['#1e1b4b', '#2e1065']  // 딥 바이올렛
-                    ],
+                    gradients: [['#0a0a12', '#1a0f2e'], ['#0f172a', '#050507'], ['#1e1b4b', '#2e1065']],
                     transitionSpeed: 7000
                 }
             }
         });
 
-        const star = document.getElementById('clickable-star');
-        const content = document.getElementById('main-content');
-        const bgContainer = document.getElementById('bg-stars');
+        // 2. Three.js 설정 (3D 별 모양 구현)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
 
-        // 2. 별 이동 로직
-        let posX = Math.random() * (window.innerWidth - 70);
-        let posY = Math.random() * (window.innerHeight - 70);
-        let velX = 0.7; 
-        let velY = 0.7;
+        // 뾰족한 별 모양 생성함수
+        function createStarGeometry() {
+            const shape = new THREE.Shape();
+            const points = 5;
+            const innerRadius = 0.4;
+            const outerRadius = 1;
+            for (let i = 0; i < points * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const currAngle = (i / points) * Math.PI;
+                if (i === 0) shape.moveTo(Math.cos(currAngle) * radius, Math.sin(currAngle) * radius);
+                else shape.lineTo(Math.cos(currAngle) * radius, Math.sin(currAngle) * radius);
+            }
+            const extrudeSettings = { depth: 0.4, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 3 };
+            return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        }
 
-        function moveStar() {
+        const geometry = createStarGeometry();
+        const material = new THREE.MeshPhysicalMaterial({
+            color: 0x00ffa3,
+            emissive: 0x00ffa3,
+            emissiveIntensity: 0.5,
+            metalness: 0.8,
+            roughness: 0.1,
+            flatShading: true
+        });
+        const starMesh = new THREE.Mesh(geometry, material);
+        scene.add(starMesh);
+
+        const light = new THREE.PointLight(0xffffff, 2, 50);
+        light.position.set(5, 5, 5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
+        camera.position.z = 5;
+
+        // 이동 및 클릭 변수 (속도 늦춤)
+        let posX = Math.random() * window.innerWidth;
+        let posY = Math.random() * window.innerHeight;
+        let velX = 0.8; // 속도 감소
+        let velY = 0.6; // 속도 감소
+        const hitbox = document.getElementById('star-hitbox');
+
+        function animate() {
+            requestAnimationFrame(animate);
+            starMesh.rotation.z += 0.01;
+            starMesh.rotation.y += 0.02;
+
             posX += velX;
             posY += velY;
-            if (posX + 70 > window.innerWidth || posX < 0) velX *= -1;
-            if (posY + 70 > window.innerHeight || posY < 0) velY *= -1;
-            star.style.left = posX + 'px';
-            star.style.top = posY + 'px';
-            requestAnimationFrame(moveStar);
+            if (posX > window.innerWidth - 60 || posX < 60) velX *= -1;
+            if (posY > window.innerHeight - 60 || posY < 60) velY *= -1;
+
+            // 월드 좌표 변환 보정
+            const vector = new THREE.Vector3(
+                (posX / window.innerWidth) * 2 - 1,
+                -(posY / window.innerHeight) * 2 + 1,
+                0.5
+            );
+            vector.unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+            starMesh.position.copy(pos);
+
+            // 히트박스 위치 동기화
+            hitbox.style.left = (posX - 60) + 'px';
+            hitbox.style.top = (posY - 60) + 'px';
+
+            renderer.render(scene, camera);
         }
-        moveStar();
+        animate();
 
-        // 3. 3D 마우스 패럴랙스
-        document.addEventListener('mousemove', (e) => {
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
-            content.style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
-
-            const bgMoveX = (e.pageX - window.innerWidth / 2) / 60;
-            const bgMoveY = (e.pageY - window.innerHeight / 2) / 60;
-            bgContainer.style.transform = `translateX(${bgMoveX}px) translateY(${bgMoveY}px)`;
-        });
-
-        // 4. 배경 입자(Stars) 생성
-        for (let i = 0; i < 60; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'dot';
-            dot.style.left = `${Math.random() * 100}%`;
-            dot.style.top = `${Math.random() * 100}%`;
-            dot.style.transform = `translateZ(${Math.random() * -400}px)`;
-            bgContainer.appendChild(dot);
-        }
-
-        // 5. 별 클릭 이벤트
-        star.addEventListener('click', () => {
-            star.style.transform = "scale(8) rotate(360deg)";
-            star.style.opacity = "0";
-            star.style.transition = "all 0.6s ease-in";
+        // 클릭 이벤트 (확실한 이동)
+        hitbox.addEventListener('click', (e) => {
+            console.log("Star Clicked!");
+            velX = 0; velY = 0;
+            starMesh.scale.set(15, 15, 15);
+            document.body.style.transition = "background 0.5s";
+            document.body.style.background = "white";
             setTimeout(() => {
                 window.location.href = 'pics.html';
-            }, 600);
+            }, 500);
         });
 
-        // 6. 메시지 순환
-        const messages = ["LISA", "AGNES", "LISA N AGNES", "FUTURE WEB"];
-        setInterval(() => {
-            const msg = messages[Math.floor(Math.random() * messages.length)];
-            document.getElementById('ai-msg').innerText = msg;
-        }, 3000);
+        // 마우스 패럴랙스
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 30;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 30;
+            document.getElementById('main-content').style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
     </script>
 </body>
 </html>
