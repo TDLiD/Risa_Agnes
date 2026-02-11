@@ -6,174 +6,26 @@
     <title>2026 Future Gallery - Lisa n Agnes</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
-        :root {
-            --accent: #00ffa3;
-            --glow: rgba(0, 255, 163, 0.4);
-            --heart-red: #ff4d6d;
-        }
-
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            background-color: #050507;
-            perspective: 2000px;
-            overflow-x: hidden;
-            overflow-y: hidden; 
-        }
-
-        /* 바둑판 모드일 때 스크롤 허용 */
-        body.grid-mode {
-            overflow-y: auto !important;
-        }
-
-        #canvas-bg {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -2;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        /* 🌏 메인 컨테이너 */
-        #sphere-scene {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 0; height: 0;
-            transform-style: preserve-3d;
-            animation: rotateEarth 30s linear infinite;
-            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* 🟥 바둑판 모드 강제 설정 (모바일 최적화) */
-        body.grid-mode #sphere-scene {
-            animation: none !important;
-            transform: none !important;
-            position: relative !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            display: grid !important;
-            /* PC: 4~5열, 태블릿: 3열, 모바일: 2열 자동 조절 */
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
-            gap: 15px !important;
-            padding: 80px 20px 120px 20px !important;
-            box-sizing: border-box !important;
-            perspective: none !important;
-            transform-style: flat !important;
-        }
-
-        @keyframes rotateEarth {
-            from { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(0deg); }
-            to { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(360deg); }
-        }
-
-        /* 📸 사진 카드 스타일 */
-        .photo-card {
-            position: absolute;
-            width: 150px; height: 150px;
-            left: -75px; top: -75px;
-            object-fit: cover;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            backface-visibility: visible; 
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            filter: brightness(0.7);
-        }
-
-        /* 📱 바둑판 모드 시 카드 스타일 초기화 */
-        body.grid-mode .photo-card {
-            position: relative !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            aspect-ratio: 1 / 1;
-            transform: none !important;
-            filter: brightness(1);
-            z-index: 1 !important;
-        }
-
-        .photo-card:hover {
-            filter: brightness(1.2);
-            border-color: var(--accent);
-            box-shadow: 0 0 30px var(--glow);
-            z-index: 10000 !important;
-            transform: scale(1.1) !important; 
-        }
-
-        /* ❤️ 하트 버튼 */
-        .bottom-nav {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10001;
-        }
-
-        #heart-btn {
-            width: 60px; height: 60px;
-            background: var(--heart-red);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 77, 109, 0.5);
-            transition: all 0.3s;
-            border: none;
-            outline: none;
-        }
-
+        :root { --accent: #00ffa3; --glow: rgba(0, 255, 163, 0.4); --heart-red: #ff4d6d; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; color: white; font-family: 'Inter', sans-serif; background-color: #050507; perspective: 2000px; overflow: hidden; }
+        body.grid-mode { overflow-y: auto !important; }
+        #canvas-bg { position: fixed; inset: 0; z-index: -2; }
+        body::before { content: ""; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3); z-index: -1; pointer-events: none; }
+        #sphere-scene { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-style: preserve-3d; animation: rotateEarth 30s linear infinite; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.grid-mode #sphere-scene { animation: none !important; transform: none !important; position: relative !important; top: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 15px !important; padding: 80px 20px 120px 20px !important; box-sizing: border-box !important; perspective: none !important; transform-style: flat !important; }
+        @keyframes rotateEarth { from { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(0deg); } to { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(360deg); } }
+        .photo-card { position: absolute; width: 150px; height: 150px; left: -75px; top: -75px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.2); cursor: pointer; backface-visibility: visible; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); filter: brightness(0.7); }
+        body.grid-mode .photo-card { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; aspect-ratio: 1/1; transform: none !important; filter: brightness(1); z-index: 1 !important; }
+        .photo-card:hover { filter: brightness(1.2); border-color: var(--accent); box-shadow: 0 0 30px var(--glow); z-index: 10000 !important; transform: scale(1.1) !important; }
+        .bottom-nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10001; }
+        #heart-btn { width: 60px; height: 60px; background: var(--heart-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 20px rgba(255, 77, 109, 0.5); transition: all 0.3s; border: none; outline: none; }
         #heart-btn:active { transform: scale(0.9); }
-
         #heart-btn svg { width: 30px; height: 30px; fill: white; }
-
-        /* 확대 모달 */
-        #modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            align-items: center; justify-content: center;
-            z-index: 999999;
-            backdrop-filter: blur(15px);
-            cursor: zoom-out;
-        }
-
-        #modal img {
-            max-width: 90%; max-height: 80%;
-            border: 2px solid var(--accent);
-            transform: scale(0.8);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
+        #modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); display: none; align-items: center; justify-content: center; z-index: 999999; backdrop-filter: blur(15px); cursor: zoom-out; }
+        #modal img { max-width: 90%; max-height: 80%; border: 2px solid var(--accent); transform: scale(0.8); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         #modal.active img { transform: scale(1); }
-
-        /* 상단 UI */
         .nav { position: fixed; top: 20px; left: 20px; z-index: 10000; }
-        .btn {
-            padding: 10px 18px;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            text-decoration: none;
-            background: rgba(0,0,0,0.5);
-            border-radius: 30px;
-            font-weight: bold; font-size: 0.8rem;
-        }
-
-        /* 모바일 대응 미디어 쿼리 */
+        .btn { padding: 10px 18px; border: 1px solid var(--accent); color: var(--accent); text-decoration: none; background: rgba(0,0,0,0.5); border-radius: 30px; font-weight: bold; font-size: 0.8rem; }
         @media (max-width: 768px) {
             .photo-card { width: 100px; height: 100px; left: -50px; top: -50px; }
             body.grid-mode #sphere-scene { grid-template-columns: repeat(2, 1fr) !important; }
@@ -181,112 +33,41 @@
     </style>
 </head>
 <body>
-
     <canvas id="canvas-bg"></canvas>
-
     <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
-
     <div id="sphere-scene"></div>
-
-    <div class="bottom-nav">
-        <button id="heart-btn">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        </button>
-    </div>
-
-    <div id="modal" onclick="closeModal()">
-        <img id="modal-img" src="" alt="">
-    </div>
-
-<script>
-    var granimInstance = new Granim({
-        element: '#canvas-bg',
-        direction: 'top-bottom',
-        states : {
-            "default-state": {
-                gradients: [['#050507', '#1a0f2e'], ['#0f172a', '#050507'], ['#1e1b4b', '#0a0a12']],
-                transitionSpeed: 8000
-            }
+    <div class="bottom-nav"><button id="heart-btn"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button></div>
+    <div id="modal" onclick="closeModal()"><img id="modal-img" src=""></div>
+    <script>
+        const granimInstance = new Granim({
+            element: '#canvas-bg', direction: 'top-bottom',
+            states : { "default-state": { gradients: [['#050507', '#1a0f2e'], ['#0f172a', '#050507'], ['#1e1b4b', '#0a0a12']], transitionSpeed: 8000 } }
+        });
+        const scene = document.getElementById('sphere-scene'), modal = document.getElementById('modal'), modalImg = document.getElementById('modal-img'), heartBtn = document.getElementById('heart-btn');
+        const count = 37, cards = [], radius = window.innerWidth < 768 ? 250 : 450;
+        for (let i = 0; i < count; i++) {
+            const index = i + 1, num = String(index).padStart(3, '0'), ext = index <= 19 ? 'jpg' : 'png', src = `images/image-${num}.${ext}`;
+            const img = document.createElement('img');
+            img.src = src; img.className = 'photo-card';
+            const phi = Math.acos(-1 + (2 * i) / count), theta = Math.sqrt(count * Math.PI) * phi;
+            const x = radius * Math.sin(phi) * Math.cos(theta), y = radius * Math.sin(phi) * Math.sin(theta), z = radius * Math.cos(phi);
+            const tf = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
+            img.style.transform = tf; img.dataset.sphereTransform = tf;
+            img.onclick = (e) => { e.stopPropagation(); modalImg.src = src; modal.style.display = 'flex'; setTimeout(() => modal.classList.add('active'), 10); };
+            scene.appendChild(img); cards.push(img);
         }
-    });
-
-    const scene = document.getElementById('sphere-scene');
-    const modal = document.getElementById('modal');
-    const modalImg = document.getElementById('modal-img');
-    const heartBtn = document.getElementById('heart-btn');
-    
-    const count = 37; 
-    const radius = window.innerWidth < 768 ? 250 : 450; 
-    const cards = [];
-
-    // 사진 카드 생성
-    for (let i = 0; i < count; i++) {
-        const index = i + 1;
-        const num = String(index).padStart(3, '0');
-        const extension = index <= 19 ? 'jpg' : 'png';
-        const src = `images/image-${num}.${extension}`;
-        
-        const img = document.createElement('img');
-        img.src = src;
-        img.className = 'photo-card';
-        
-        const phi = Math.acos(-1 + (2 * i) / count);
-        const theta = Math.sqrt(count * Math.PI) * phi;
-
-        const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.sin(phi) * Math.sin(theta);
-        const z = radius * Math.cos(phi);
-
-        const baseTransform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
-        img.style.transform = baseTransform;
-        img.dataset.sphereTransform = baseTransform; 
-
-        img.onclick = (e) => {
-            e.stopPropagation();
-            openModal(src);
+        heartBtn.onclick = () => {
+            const isGrid = document.body.classList.toggle('grid-mode');
+            cards.forEach(c => c.style.transform = isGrid ? 'none' : c.dataset.sphereTransform);
+            window.scrollTo({ top: 0, behavior: isGrid ? 'smooth' : 'auto' });
         };
-
-        scene.appendChild(img);
-        cards.push(img);
-    }
-
-    // 바둑판 모드 토글 함수
-    heartBtn.onclick = () => {
-        const isGrid = document.body.classList.toggle('grid-mode');
-        
-        if (isGrid) {
-            // 바둑판 모드: 인라인 transform 제거하여 CSS Grid가 작동하게 함
-            cards.forEach(card => {
-                card.style.transform = 'none';
-            });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-            // 구체 모드: 원래의 3D transform 복원
-            cards.forEach(card => {
-                card.style.transform = card.dataset.sphereTransform;
-            });
-            window.scrollTo(0, 0);
-        }
-    };
-
-    function openModal(src) {
-        modalImg.src = src;
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
-    }
-
-    function closeModal() {
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
-    }
-
-    document.addEventListener('mousemove', (e) => {
-        if (!document.body.classList.contains('grid-mode')) {
-            const moveX = (e.pageX - window.innerWidth / 2) / 100;
-            const moveY = (e.pageY - window.innerHeight / 2) / 100;
-            scene.parentElement.style.perspectiveOrigin = `${50 + moveX}% ${50 + moveY}%`;
-        }
-    });
-</script>
+        function closeModal() { modal.classList.remove('active'); setTimeout(() => modal.style.display = 'none', 300); }
+        document.addEventListener('mousemove', (e) => {
+            if (!document.body.classList.contains('grid-mode')) {
+                const mx = (e.pageX - window.innerWidth / 2) / 100, my = (e.pageY - window.innerHeight / 2) / 100;
+                scene.parentElement.style.perspectiveOrigin = `${50 + mx}% ${50 + my}%`;
+            }
+        });
+    </script>
 </body>
 </html>
