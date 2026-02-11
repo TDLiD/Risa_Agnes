@@ -7,45 +7,73 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
         :root { --accent: #00ffa3; --glow: rgba(0, 255, 163, 0.4); --heart-red: #ff4d6d; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; color: white; font-family: 'Inter', sans-serif; background-color: #050507; perspective: 2000px; overflow: hidden; }
-        body.grid-mode { overflow-y: auto !important; }
+        
+        /* 📌 핵심: body는 스크롤을 가지지 않고, 내부의 특정 영역만 스크롤되게 하거나 fixed를 강제함 */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; color: white; font-family: 'Inter', sans-serif; background-color: #050507; }
+        
+        body { overflow: hidden; } /* 기본적으로 전체 스크롤 차단 */
+        body.grid-mode { overflow-y: auto !important; } /* 바둑판일 때만 브라우저 수준 스크롤 허용 */
+
         #canvas-bg { position: fixed; inset: 0; z-index: -2; }
         body::before { content: ""; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3); z-index: -1; pointer-events: none; }
-        #sphere-scene { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-style: preserve-3d; animation: rotateEarth 30s linear infinite; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        body.grid-mode #sphere-scene { animation: none !important; transform: none !important; position: relative !important; top: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 15px !important; padding: 80px 20px 120px 20px !important; box-sizing: border-box !important; perspective: none !important; transform-style: flat !important; }
-        @keyframes rotateEarth { from { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(0deg); } to { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(360deg); } }
-        .photo-card { position: absolute; width: 150px; height: 150px; left: -75px; top: -75px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.2); cursor: pointer; backface-visibility: visible; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); filter: brightness(0.7); }
-        body.grid-mode .photo-card { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; aspect-ratio: 1/1; transform: none !important; filter: brightness(1); z-index: 1 !important; }
-        .photo-card:hover { filter: brightness(1.2); border-color: var(--accent); box-shadow: 0 0 30px var(--glow); z-index: 10000 !important; transform: scale(1.1) !important; }
         
-        /* 하단 네비게이션 및 버튼 */
-        .bottom-nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10001; display: flex; align-items: center; gap: 15px; }
-        #heart-btn { width: 60px; height: 60px; background: var(--heart-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 20px rgba(255, 77, 109, 0.5); transition: 0.3s; border: none; }
-        #ai-rank-btn { padding: 0 20px; height: 50px; background: rgba(0,0,0,0.6); border: 1px solid var(--accent); color: var(--accent); border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.3s; backdrop-filter: blur(5px); white-space: nowrap; }
-        #ai-rank-btn:hover { background: var(--accent); color: black; box-shadow: 0 0 20px var(--glow); }
-        #heart-btn:active, #ai-rank-btn:active { transform: scale(0.9); }
-        #heart-btn svg { width: 30px; height: 30px; fill: white; }
+        /* 3D 장면 컨테이너 */
+        #sphere-scene { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-style: preserve-3d; animation: rotateEarth 30s linear infinite; transition: all 0.8s; }
+        
+        body.grid-mode #sphere-scene { 
+            animation: none !important; transform: none !important; 
+            position: relative !important; top: 0 !important; left: 0 !important; 
+            width: 100% !important; height: auto !important; 
+            display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; 
+            gap: 15px !important; padding: 80px 20px 180px 20px !important; 
+            box-sizing: border-box !important; transform-style: flat !important; 
+        }
 
-        #modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); display: none; align-items: center; justify-content: center; z-index: 999999; backdrop-filter: blur(15px); cursor: zoom-out; }
-        #modal img { max-width: 90%; max-height: 80%; border: 2px solid var(--accent); transform: scale(0.8); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        #modal.active img { transform: scale(1); }
-        .nav { position: fixed; top: 20px; left: 20px; z-index: 10000; }
-        .btn { padding: 10px 18px; border: 1px solid var(--accent); color: var(--accent); text-decoration: none; background: rgba(0,0,0,0.5); border-radius: 30px; font-weight: bold; font-size: 0.8rem; }
+        @keyframes rotateEarth { from { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(0deg); } to { transform: translate(-50%, -50%) rotateX(-5deg) rotateY(360deg); } }
+        
+        .photo-card { position: absolute; width: 150px; height: 150px; left: -75px; top: -75px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.2); cursor: pointer; transition: all 0.6s; filter: brightness(0.7); }
+        body.grid-mode .photo-card { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; aspect-ratio: 1/1; transform: none !important; filter: brightness(1); }
+        
+        /* 📌 하단 네비게이션: fixed 속성이 스크롤에 무조건 저항하도록 설정 */
+        .bottom-nav { 
+            position: fixed !important; 
+            bottom: 30px !important; 
+            left: 50% !important; 
+            transform: translateX(-50%) !important; 
+            z-index: 200000 !important; /* 어떤 요소보다 위에 있음 */
+            display: flex !important; 
+            align-items: center; 
+            gap: 15px;
+            pointer-events: auto !important;
+        }
+
+        #heart-btn { width: 60px; height: 60px; background: var(--heart-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; box-shadow: 0 0 20px rgba(255, 77, 109, 0.5); }
+        #ai-rank-btn { padding: 0 20px; height: 50px; background: rgba(0,0,0,0.85); border: 1px solid var(--accent); color: var(--accent); border-radius: 25px; cursor: pointer; font-weight: bold; backdrop-filter: blur(10px); white-space: nowrap; }
+        
+        #modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); display: none; align-items: center; justify-content: center; z-index: 300000; backdrop-filter: blur(15px); }
+        #modal img { max-width: 90%; max-height: 80%; border: 2px solid var(--accent); }
+        
+        .nav { position: fixed; top: 20px; left: 20px; z-index: 150000; }
+        .btn { padding: 10px 18px; border: 1px solid var(--accent); color: var(--accent); text-decoration: none; background: rgba(0,0,0,0.5); border-radius: 30px; font-weight: bold; }
+        
         @media (max-width: 768px) {
-            .photo-card { width: 100px; height: 100px; left: -50px; top: -50px; }
             body.grid-mode #sphere-scene { grid-template-columns: repeat(2, 1fr) !important; }
-            .bottom-nav { gap: 10px; }
         }
     </style>
 </head>
 <body>
     <canvas id="canvas-bg"></canvas>
     <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
+    
     <div id="sphere-scene"></div>
+    
     <div class="bottom-nav">
-        <button id="heart-btn"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+        <button id="heart-btn" title="Toggle Grid Mode">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </button>
         <button id="ai-rank-btn">WHICH ONE IS THE PRETTIEST?</button>
     </div>
+
     <div id="modal" onclick="closeModal()"><img id="modal-img" src=""></div>
 
     <script>
@@ -53,6 +81,7 @@
             element: '#canvas-bg', direction: 'top-bottom',
             states : { "default-state": { gradients: [['#050507', '#1a0f2e'], ['#0f172a', '#050507'], ['#1e1b4b', '#0a0a12']], transitionSpeed: 8000 } }
         });
+
         const scene = document.getElementById('sphere-scene'), modal = document.getElementById('modal'), modalImg = document.getElementById('modal-img'), heartBtn = document.getElementById('heart-btn'), aiBtn = document.getElementById('ai-rank-btn');
         const count = 37, cards = [], radius = window.innerWidth < 768 ? 250 : 450;
 
@@ -71,63 +100,33 @@
         heartBtn.onclick = () => {
             const isGrid = document.body.classList.toggle('grid-mode');
             cards.forEach(c => c.style.transform = isGrid ? 'none' : c.dataset.sphereTransform);
-            window.scrollTo({ top: 0, behavior: isGrid ? 'smooth' : 'auto' });
         };
 
-// 미학적 분석 알고리즘 (최적화 버전)
-async function getBestPhoto() {
-    aiBtn.innerText = "ANALYZING...";
-    let bestImg = cards[0].src;
-    let maxScore = -1;
-
-    // 1. 캔버스를 반복문 밖에서 한 번만 생성
-    const canvas = document.createElement('canvas');
-    // 2. willReadFrequently 속성을 true로 설정하여 브라우저 최적화 활성화
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    
-    // 분석용 임시 크기 설정
-    canvas.width = 50; 
-    canvas.height = 50;
-
-    for (const card of cards) {
-        try {
-            // 이미지가 로드된 상태인지 확인 후 분석
-            if (!card.complete) continue;
-
-            ctx.clearRect(0, 0, 50, 50);
-            ctx.drawImage(card, 0, 0, 50, 50);
-            const data = ctx.getImageData(0, 0, 50, 50).data;
-            
-            let brightness = 0, saturation = 0, colorVariance = 0;
-            
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i], g = data[i+1], b = data[i+2];
-                const max = Math.max(r, g, b), min = Math.min(r, g, b);
-                
-                brightness += (max + min) / 2;
-                saturation += (max - min);
-                // 색상의 다양성(분산) 추가 계산
-                colorVariance += Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r);
+        // 분석 기능 (동일)
+        async function getBestPhoto() {
+            aiBtn.innerText = "ANALYZING...";
+            let bestImg = cards[0].src, maxScore = -1;
+            const cvs = document.createElement('canvas'), ctx = cvs.getContext('2d', { willReadFrequently: true });
+            cvs.width = cvs.height = 50;
+            for (const card of cards) {
+                try {
+                    if (!card.complete) continue;
+                    ctx.clearRect(0, 0, 50, 50); ctx.drawImage(card, 0, 0, 50, 50);
+                    const d = ctx.getImageData(0, 0, 50, 50).data;
+                    let b = 0, s = 0, v = 0;
+                    for (let i = 0; i < d.length; i += 4) {
+                        const r = d[i], g = d[i+1], bl = d[i+2];
+                        const mx = Math.max(r, g, bl), mn = Math.min(r, g, bl);
+                        b += (mx + mn) / 2; s += (mx - mn); v += Math.abs(r - g) + Math.abs(g - bl) + Math.abs(bl - r);
+                    }
+                    const sc = (b * 0.2 + s * 0.5 + v * 0.3) * (Math.random() * 0.4 + 0.8);
+                    if (sc > maxScore) { maxScore = sc; bestImg = card.src; }
+                } catch(e) {}
             }
-
-            // 미학적 점수 공식: 밝기 + 채도 + 색상다양성 + 약간의 랜덤성
-            const score = (brightness * 0.2 + saturation * 0.5 + colorVariance * 0.3) * (Math.random() * 0.4 + 0.8); 
-            
-            if (score > maxScore) { 
-                maxScore = score; 
-                bestImg = card.src; 
-            }
-        } catch(e) {
-            console.warn("CORS or Analysis error:", e);
+            aiBtn.innerText = "WHICH ONE IS THE PRETTIEST?"; openModal(bestImg);
         }
-    }
-    
-    aiBtn.innerText = "WHICH ONE IS THE PRETTIEST?";
-    openModal(bestImg);
-}
 
         aiBtn.onclick = getBestPhoto;
-
         function openModal(src) { modalImg.src = src; modal.style.display = 'flex'; setTimeout(() => modal.classList.add('active'), 10); }
         function closeModal() { modal.classList.remove('active'); setTimeout(() => modal.style.display = 'none', 300); }
         
