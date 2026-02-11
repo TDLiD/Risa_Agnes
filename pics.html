@@ -9,6 +9,7 @@
         :root {
             --accent: #00ffa3;
             --glow: rgba(0, 255, 163, 0.4);
+            --heart-red: #ff4d6d;
         }
 
         body, html {
@@ -16,9 +17,15 @@
             width: 100%; height: 100%;
             color: white;
             font-family: 'Inter', sans-serif;
-            overflow: hidden;
             background-color: #050507;
             perspective: 2000px;
+            /* 바둑판 모드일 때 스크롤 허용을 위해 처리 */
+            overflow-x: hidden;
+            overflow-y: hidden; 
+        }
+
+        body.grid-mode {
+            overflow-y: auto; /* 바둑판 모드일 때만 스크롤 허용 */
         }
 
         /* 1. Granim 배경용 캔버스 */
@@ -29,7 +36,6 @@
             z-index: -2;
         }
 
-        /* 2. 배경 오버레이 (약간 어둡게 처리하여 몰입감 상승) */
         body::before {
             content: "";
             position: fixed;
@@ -47,6 +53,21 @@
             width: 0; height: 0;
             transform-style: preserve-3d;
             animation: rotateEarth 30s linear infinite;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 바둑판 모드일 때 컨테이너 설정 변화 */
+        body.grid-mode #sphere-scene {
+            animation-play-state: paused;
+            transform: translate(-50%, 0) rotateX(0) rotateY(0) !important;
+            top: 50px;
+            height: auto;
+            width: 90vw;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            perspective: none;
+            transform-style: flat;
         }
 
         @keyframes rotateEarth {
@@ -57,16 +78,25 @@
         /* 사진 카드 스타일 */
         .photo-card {
             position: absolute;
-            width: 150px; 
-            height: 150px;
+            width: 150px; height: 150px;
             left: -75px; top: -75px;
             object-fit: cover;
             border-radius: 12px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             cursor: pointer;
             backface-visibility: visible; 
-            transition: border 0.3s, box-shadow 0.3s, filter 0.3s, transform 0.3s;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             filter: brightness(0.7);
+        }
+
+        /* 바둑판 모드일 때 카드 스타일 변화 */
+        body.grid-mode .photo-card {
+            position: relative !important;
+            left: 0 !important; top: 0 !important;
+            transform: none !important;
+            width: 100%;
+            height: 200px;
+            filter: brightness(1);
         }
 
         .photo-card:hover {
@@ -74,8 +104,41 @@
             border-color: var(--accent);
             box-shadow: 0 0 30px var(--glow);
             z-index: 10000 !important;
-            /* 호버 시 구의 중심에서 바깥쪽으로 살짝 튀어나오는 효과 */
             transform: scale(1.2) !important; 
+        }
+
+        /* ❤️ 하단 중앙 하트 버튼 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+        }
+
+        #heart-btn {
+            width: 60px;
+            height: 60px;
+            background: var(--heart-red);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 77, 109, 0.4);
+            transition: all 0.3s;
+            border: none;
+        }
+
+        #heart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 77, 109, 0.8);
+        }
+
+        #heart-btn svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
         }
 
         /* 확대 모달 */
@@ -93,8 +156,7 @@
         }
 
         #modal img {
-            max-width: 85%;
-            max-height: 85%;
+            max-width: 85%; max-height: 85%;
             border: 2px solid var(--accent);
             box-shadow: 0 0 50px var(--glow);
             transform: scale(0.8);
@@ -103,7 +165,7 @@
 
         #modal.active img { transform: scale(1); }
 
-        /* UI */
+        /* 상단 UI */
         .nav { position: fixed; top: 20px; left: 20px; z-index: 10000; }
         .btn {
             padding: 10px 22px;
@@ -112,16 +174,11 @@
             text-decoration: none;
             background: rgba(0,0,0,0.5);
             border-radius: 30px;
-            font-weight: bold;
-            font-size: 0.9rem;
+            font-weight: bold; font-size: 0.9rem;
             transition: all 0.3s;
             letter-spacing: 1px;
         }
-        .btn:hover {
-            background: var(--accent);
-            color: black;
-            box-shadow: 0 0 20px var(--glow);
-        }
+        .btn:hover { background: var(--accent); color: black; box-shadow: 0 0 20px var(--glow); }
     </style>
 </head>
 <body>
@@ -132,12 +189,18 @@
 
     <div id="sphere-scene"></div>
 
+    <div class="bottom-nav">
+        <button id="heart-btn" title="Toggle Grid Mode">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </button>
+    </div>
+
     <div id="modal" onclick="closeModal()">
         <img id="modal-img" src="" alt="">
     </div>
 
 <script>
-    // 1. Granim.js 배경 설정 (index.html과 통일감 있는 오로라 효과)
+    // 1. Granim.js 배경 설정
     var granimInstance = new Granim({
         element: '#canvas-bg',
         direction: 'top-bottom',
@@ -157,10 +220,13 @@
     const scene = document.getElementById('sphere-scene');
     const modal = document.getElementById('modal');
     const modalImg = document.getElementById('modal-img');
+    const heartBtn = document.getElementById('heart-btn');
     
     const count = 37; 
-    const radius = 450; // 구체 반지름 살짝 확대
+    const radius = 450; 
+    const cards = [];
 
+    // 사진 카드 생성
     for (let i = 0; i < count; i++) {
         const index = i + 1;
         const num = String(index).padStart(3, '0');
@@ -179,9 +245,10 @@
         const y = radius * Math.sin(phi) * Math.sin(theta);
         const z = radius * Math.cos(phi);
 
-        // 기본 변환 설정 (회전 포함)
+        // 기본 변환 저장
         const baseTransform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
         img.style.transform = baseTransform;
+        img.dataset.sphereTransform = baseTransform; // 복원용 데이터 저장
 
         img.onclick = (e) => {
             e.stopPropagation();
@@ -189,7 +256,21 @@
         };
 
         scene.appendChild(img);
+        cards.push(img);
     }
+
+    // 바둑판 모드 토글
+    heartBtn.onclick = () => {
+        document.body.classList.toggle('grid-mode');
+        
+        if (!document.body.classList.contains('grid-mode')) {
+            // 구체 모드로 복귀 시 transform 재설정
+            cards.forEach(card => {
+                card.style.transform = card.dataset.sphereTransform;
+            });
+            window.scrollTo(0, 0);
+        }
+    };
 
     function openModal(src) {
         modalImg.src = src;
@@ -202,11 +283,13 @@
         setTimeout(() => modal.style.display = 'none', 300);
     }
 
-    // 마우스 이동에 따른 미세한 시점 변화 (패럴랙스)
+    // 마우스 패럴랙스 (구체 모드일 때만 작동)
     document.addEventListener('mousemove', (e) => {
-        const moveX = (e.pageX - window.innerWidth / 2) / 100;
-        const moveY = (e.pageY - window.innerHeight / 2) / 100;
-        scene.parentElement.style.perspectiveOrigin = `${50 + moveX}% ${50 + moveY}%`;
+        if (!document.body.classList.contains('grid-mode')) {
+            const moveX = (e.pageX - window.innerWidth / 2) / 100;
+            const moveY = (e.pageY - window.innerHeight / 2) / 100;
+            scene.parentElement.style.perspectiveOrigin = `${50 + moveX}% ${50 + moveY}%`;
+        }
     });
 </script>
 </body>
