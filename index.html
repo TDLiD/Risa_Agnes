@@ -8,8 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --accent: #ff4d6d;
-            --accent-glow: rgba(255, 77, 109, 0.3);
+            --accent: #ffffff;
+            --accent-glow: rgba(255, 255, 255, 0.2);
             --text: #ffffff;
         }
 
@@ -19,17 +19,20 @@
             color: var(--text);
             font-family: 'Inter', system-ui, sans-serif;
             overflow: hidden;
-            background-color: #050507;
+            background-color: #000000; /* 배경 블랙 고정 */
             display: flex;
             align-items: center;
             justify-content: center;
+            perspective: 1000px;
         }
 
+        /* 배경 그라데이션 제거 혹은 아주 어둡게 유지 */
         #canvas-image-blender {
             position: absolute;
             width: 100%; height: 100%;
             top: 0; left: 0;
             z-index: -2;
+            opacity: 0.3; /* 블랙 배경을 위해 투명도 낮춤 */
         }
 
         #three-canvas {
@@ -47,20 +50,18 @@
             cursor: pointer;
             pointer-events: auto;
             border-radius: 50%;
-            display: block;
         }
 
         .grid-bg {
             position: absolute;
             width: 200%; height: 200%;
             background-image: 
-                linear-gradient(var(--accent-glow) 1px, transparent 1px),
-                linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
             background-size: 50px 50px;
             transform: rotateX(60deg);
             animation: gridMove 20s linear infinite;
             z-index: -1;
-            opacity: 0.15;
         }
 
         @keyframes gridMove {
@@ -74,13 +75,28 @@
             text-align: center;
             pointer-events: none;
             transform-style: preserve-3d;
+            transition: transform 0.1s ease-out; /* 흔들림을 위한 부드러운 전환 */
         }
 
         .huge-title {
             font-size: clamp(2.5rem, 10vw, 7rem);
             font-weight: 900;
             text-transform: uppercase;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            color: #ffffff;
+            /* 3D 입체 텍스트 효과 */
+            text-shadow: 
+                0 1px 0 #ccc,
+                0 2px 0 #c9c9c9,
+                0 3px 0 #bbb,
+                0 4px 0 #b9b9b9,
+                0 5px 0 #aaa,
+                0 6px 1px rgba(0,0,0,.1),
+                0 0 5px rgba(0,0,0,.1),
+                0 1px 3px rgba(0,0,0,.3),
+                0 3px 5px rgba(0,0,0,.2),
+                0 5px 10px rgba(0,0,0,.25),
+                0 10px 10px rgba(0,0,0,.2),
+                0 20px 20px rgba(0,0,0,.15);
             line-height: 0.9;
             margin: 20px 0;
         }
@@ -88,20 +104,22 @@
         .ai-badge {
             display: inline-block;
             padding: 10px 20px;
-            border: 2px solid var(--accent);
+            border: 2px solid #ffffff;
             border-radius: 30px;
-            color: var(--accent);
+            color: #ffffff;
             margin-bottom: 30px;
-            background: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 0 20px var(--accent-glow);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
+            letter-spacing: 2px;
+            font-weight: bold;
         }
 
         .hint {
             margin-top: 20px;
             font-size: 0.8rem;
-            color: rgba(255,255,255,0.6);
-            letter-spacing: 3px;
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 5px;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -113,25 +131,25 @@
     <div id="star-hitbox"></div>
 
     <main class="content-wrapper" id="main-content">
-        <div class="ai-badge" id="ai-msg">HEART CORE ONLINE</div>
+        <div class="ai-badge">HEART CORE ONLINE</div>
         <h1 class="huge-title">BEYOND<br>FUTURE<br>Lisa n Agnes</h1>
         <div class="hint">CATCH THE HEART TO ENTER</div>
     </main>
 
     <script>
-        // 1. 배경 그라데이션
+        // 1. 배경 (아주 어두운 그라데이션)
         var granimInstance = new Granim({
             element: '#canvas-image-blender',
             direction: 'diagonal',
             states : {
                 "default-state": {
-                    gradients: [['#0a0a12', '#1a0f2e'], ['#0f172a', '#050507'], ['#1e1b4b', '#2e1065']],
-                    transitionSpeed: 7000
+                    gradients: [['#000000', '#111111'], ['#050505', '#000000']],
+                    transitionSpeed: 10000
                 }
             }
         });
 
-        // 2. Three.js 설정
+        // 2. Three.js (똑바른 하트 + 선명한 이미지)
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ 
@@ -143,100 +161,81 @@
 
         const textureLoader = new THREE.TextureLoader();
         const heartTexture = textureLoader.load('bg/bg2.png');
-        
-        // 텍스처 설정 최적화
-        heartTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        heartTexture.center.set(0.5, 0.5);
+        heartTexture.anisotropy = 16; 
 
-        // 하트 모양 생성 (똑바로 서 있도록 좌표 수정)
         function createHeartGeometry() {
-            const x = 0, y = 0;
             const shape = new THREE.Shape();
-            // 좌표를 반전시켜서 처음부터 똑바로 생성되게 함
-            shape.moveTo(x, y - 0.5);
-            shape.bezierCurveTo(x, y - 0.5, x + 0.5, y - 1.5, x + 1.5, y - 1.5);
-            shape.bezierCurveTo(x + 3, y - 1.5, x + 3, y + 0.7, x + 3, y + 0.7);
-            shape.bezierCurveTo(x + 3, y + 1.5, x + 1.5, y + 3, x, y + 4);
-            shape.bezierCurveTo(x - 1.5, y + 3, x - 3, y + 1.5, x - 3, y + 0.7);
-            shape.bezierCurveTo(x - 3, y + 0.7, x - 3, y - 1.5, x - 1.5, y - 1.5);
-            shape.bezierCurveTo(x - 0.5, y - 1.5, x, y - 0.5, x, y - 0.5);
+            const x = 0, y = 0;
+            // 하트 모양 좌표 재설정 (똑바로 나오게)
+            shape.moveTo( x + 2.5, y + 2.5 );
+            shape.bezierCurveTo( x + 2.5, y + 2.5, x + 2.0, y, x, y );
+            shape.bezierCurveTo( x - 3.0, y, x - 3.0, y + 3.5, x - 3.0, y + 3.5 );
+            shape.bezierCurveTo( x - 3.0, y + 5.5, x - 1.0, y + 7.7, x + 2.5, y + 9.5 );
+            shape.bezierCurveTo( x + 6.0, y + 7.7, x + 8.0, y + 5.5, x + 8.0, y + 3.5 );
+            shape.bezierCurveTo( x + 8.0, y + 3.5, x + 8.0, y, x + 5.0, y );
+            shape.bezierCurveTo( x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5 );
 
-            const extrudeSettings = { 
-                depth: 0.8, 
-                bevelEnabled: true, 
-                bevelThickness: 0.2, 
-                bevelSize: 0.2, 
-                bevelSegments: 5 
-            };
-            
+            const extrudeSettings = { depth: 1.5, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5, bevelSegments: 10 };
             const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            geo.center();
-
-            // 중요: 이미지가 하트 중심에 선명하게 박히도록 UV 좌표 재계산
-            const pos = geo.attributes.position;
-            const bBox = geo.boundingBox;
-            const size = new THREE.Vector3();
-            bBox.getSize(size);
             
+            geo.center();
+            geo.rotateZ(Math.PI); // 180도 회전시켜 정방향 고정
+
+            // UV 재정의: 이미지가 가운데 선명하게 박히도록 계산
+            const pos = geo.attributes.position;
+            geo.computeBoundingBox();
+            const min = geo.boundingBox.min;
+            const max = geo.boundingBox.max;
+            const size = new THREE.Vector2(max.x - min.x, max.y - min.y);
             const uvs = [];
-            for(let i = 0; i < pos.count; i++) {
-                let u = (pos.getX(i) - bBox.min.x) / size.x;
-                let v = (pos.getY(i) - bBox.min.y) / size.y;
+            for (let i = 0; i < pos.count; i++) {
+                let u = (pos.getX(i) - min.x) / size.x;
+                let v = (pos.getY(i) - min.y) / size.y;
                 uvs.push(u, v);
             }
             geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-
             return geo;
         }
 
         const geometry = createHeartGeometry();
-        
         const material = new THREE.MeshPhysicalMaterial({
             map: heartTexture,
             color: 0xffffff,
-            metalness: 0.1,
-            roughness: 0.3,
             emissive: 0xffffff,
-            emissiveIntensity: 0.1, // 이미지 본연의 색상을 위해 조절
+            emissiveIntensity: 0.15,
+            metalness: 0.2,
+            roughness: 0.1,
             transparent: true
         });
         
         const heartMesh = new THREE.Mesh(geometry, material);
         scene.add(heartMesh);
 
-        // 조명 보강
-        const light = new THREE.DirectionalLight(0xffffff, 1.2);
-        light.position.set(0, 0, 10);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        // 조명: 이미지 선명도를 위해 정면 조명 강화
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1.2);
+        pointLight.position.set(0, 0, 10);
+        scene.add(pointLight);
 
-        camera.position.z = 8;
+        camera.position.z = 15;
 
-        let posX = Math.random() * window.innerWidth;
-        let posY = Math.random() * window.innerHeight;
-        let velX = 1.2; 
-        let velY = 0.9; 
+        let posX = window.innerWidth / 2;
+        let posY = window.innerHeight / 2;
+        let velX = 1.5; 
+        let velY = 1.2; 
         const hitbox = document.getElementById('star-hitbox');
 
         function animate() {
             requestAnimationFrame(animate);
+            heartMesh.rotation.y += 0.02;
             
-            const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.06;
-            heartMesh.scale.set(pulse, pulse, pulse);
-            
-            // 이미지가 잘 보이도록 Y축 회전을 부드럽게 유지
-            heartMesh.rotation.y += 0.015;
-
             posX += velX;
             posY += velY;
             if (posX > window.innerWidth - 80 || posX < 80) velX *= -1;
             if (posY > window.innerHeight - 80 || posY < 80) velY *= -1;
 
-            const vector = new THREE.Vector3(
-                (posX / window.innerWidth) * 2 - 1,
-                -(posY / window.innerHeight) * 2 + 1,
-                0.5
-            );
+            const vector = new THREE.Vector3((posX / window.innerWidth) * 2 - 1, -(posY / window.innerHeight) * 2 + 1, 0.5);
             vector.unproject(camera);
             const dir = vector.sub(camera.position).normalize();
             const distance = -camera.position.z / dir.z;
@@ -250,20 +249,17 @@
         }
         animate();
 
-        hitbox.addEventListener('click', () => {
-            velX = 0; velY = 0;
-            heartMesh.scale.set(20, 20, 20);
-            document.body.style.transition = "background 0.6s ease-in-out";
-            document.body.style.background = "white";
-            setTimeout(() => {
-                window.location.href = 'pics.html';
-            }, 600);
+        // 마우스 패럴랙스 (텍스트 3D 흔들림)
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 25;
+            const y = (window.innerHeight / 2 - e.clientY) / 25;
+            const content = document.getElementById('main-content');
+            content.style.transform = `rotateY(${x}deg) rotateX(${-y}deg) translateZ(50px)`;
         });
 
-        document.addEventListener('mousemove', (e) => {
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
-            document.getElementById('main-content').style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
+        hitbox.addEventListener('click', () => {
+            document.body.style.background = "white";
+            setTimeout(() => { window.location.href = 'pics.html'; }, 500);
         });
 
         window.addEventListener('resize', () => {
