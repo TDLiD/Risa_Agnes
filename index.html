@@ -56,9 +56,16 @@
         .huge-title { font-size: clamp(2rem, 8vw, 6rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,163,0.5); }
         .flash-overlay { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 999999; transition: opacity 0.4s ease-in; }
         .flash-overlay.active { opacity: 1; }
+
+        /* 오디오 컨트롤러 숨기기 */
+        #bg-music { display: none; }
     </style>
 </head>
 <body>
+    <audio id="bg-music" loop>
+        <source src="music/How_You_Like_That.mp3" type="audio/mpeg">
+    </audio>
+
     <canvas id="bg-canvas"></canvas>
     <div class="grid-bg"></div>
     <div class="flash-overlay" id="flash"></div>
@@ -79,9 +86,30 @@
 
     <main class="content-wrapper">
         <h1 class="huge-title">BEYOND<br>FUTURE<br>♡LISA LOVE♥</h1>
+        <p style="font-size: 14px; opacity: 0.6; margin-top: 20px;">Click anywhere to start Music 🎵</p>
     </main>
 
     <script>
+        // 🎵 음악 재생 컨트롤 로직
+        const music = document.getElementById('bg-music');
+        
+        function playMusic() {
+            if (music.paused) {
+                music.play()
+                .then(() => {
+                    console.log("Music started!");
+                    // 재생 성공 시 더 이상 이벤트 리스너가 필요 없으므로 삭제
+                    window.removeEventListener('click', playMusic);
+                    window.removeEventListener('touchstart', playMusic);
+                })
+                .catch(e => console.log("Playback blocked by browser:", e));
+            }
+        }
+
+        // 페이지 내 모든 클릭 및 터치에 반응하여 음악 재생
+        window.addEventListener('click', playMusic);
+        window.addEventListener('touchstart', playMusic);
+
         const gifList = Array.from({length: 31}, (_, i) => `bg/lisa/image-${String(i+1).padStart(3, '0')}.gif`);
         
         function createMarquee(targetId, isVertical = false) {
@@ -89,7 +117,6 @@
             const wrapper = document.createElement('div');
             wrapper.className = isVertical ? 'v-marquee' : 'marquee';
             
-            // 📌 이미지를 4배로 늘려 빈 공간 절대 발생 안 하게 함
             const quadrupledList = [...gifList, ...gifList, ...gifList, ...gifList];
             quadrupledList.forEach(src => {
                 const img = document.createElement('img');
@@ -97,7 +124,6 @@
                 wrapper.appendChild(img);
             });
             
-            // 애니메이션을 위해 똑같은 세트를 하나 더 추가
             container.appendChild(wrapper.cloneNode(true));
             container.appendChild(wrapper);
         }
@@ -117,7 +143,7 @@
             "LISA, kehadiranmu saja sudah sempurna 💎",
             "Tak apa pelan, yang 중요해! 🐢",
             "Kerja kerasmu luar biasa! 🔥",
-            "Besok akan lebih cerah ☀️",
+            "Besok akan 더 밝을 거야 ☀️",
             "LISA, muse abadi kami 🎨",
             "Fajar pasti tiba 🌌",
             "Percayalah pada dirimu 🌟",
@@ -167,7 +193,6 @@
         }
         setInterval(showRandomBubble, 3000);
 
-        // 배경 캔버스
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
         let particles = [];
@@ -206,7 +231,6 @@
         }
         animate();
 
-        // 하트
         const heart = document.getElementById('heart'), flash = document.getElementById('flash');
         let hSize = 100, posX = width/2, posY = height/2, velX = 1.2, velY = 1.0;
         function moveHeart() {
@@ -218,7 +242,10 @@
             requestAnimationFrame(moveHeart);
         }
         moveHeart();
-        heart.addEventListener('click', () => {
+        
+        heart.addEventListener('click', (e) => {
+            e.stopPropagation(); // 중복 재생 방지
+            playMusic(); // 다음 페이지 가기 전 음악 재생 시도
             flash.classList.add('active');
             setTimeout(() => { window.location.href = "pics.html"; }, 400);
         });

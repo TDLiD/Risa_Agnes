@@ -35,7 +35,7 @@
         .photo-card { position:absolute; width:150px; height:150px; left:-75px; top:-75px; object-fit:cover; border-radius:12px; border:2px solid rgba(255,255,255,0.2); cursor:pointer; transition:all 0.6s; filter:brightness(0.7); backface-visibility:hidden; }
         body.grid-mode .photo-card { position:relative!important; left:0!important; top:0!important; width:100%!important; height:auto!important; aspect-ratio:1/1; transform:none!important; filter:brightness(1); }
 
-        /* 4. 📌 하단 네비게이션: 스크롤 컨테이너 외부에 배치하여 절대 고정 */
+        /* 4. 📌 하단 네비게이션 */
         .bottom-nav { 
             position:fixed!important; 
             bottom:max(30px, env(safe-area-inset-bottom))!important; 
@@ -58,9 +58,16 @@
         .loader { width:220px; height:4px; background:rgba(255,255,255,0.1); margin-top:25px; border-radius:2px; position:relative; overflow:hidden; }
         .loader-bar { width:0%; height:100%; background:var(--accent); position:absolute; }
         #modal { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:3000000; backdrop-filter:blur(20px); }
+
+        /* 오디오 숨기기 */
+        #bg-music { display: none; }
     </style>
 </head>
 <body>
+    <audio id="bg-music" loop>
+        <source src="music/DDU_DU_DDU_DU.mp3" type="audio/mpeg">
+    </audio>
+
     <canvas id="canvas-bg"></canvas>
     <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
 
@@ -83,27 +90,39 @@
     <div id="modal" onclick="closeModal()"><img id="modal-img" src="" style="max-width:90%; max-height:80%;"></div>
 
     <script>
-        // JS는 기존과 거의 동일하나 scene 참조만 확인
+        // 🎵 음악 재생 로직
+        const music = document.getElementById('bg-music');
+        function playMusic() {
+            if (music.paused) {
+                music.play().catch(e => console.log("Music play blocked"));
+                // 재생 시작 시 이벤트 제거
+                window.removeEventListener('click', playMusic);
+                window.removeEventListener('touchstart', playMusic);
+            }
+        }
+        // 사용자가 페이지의 어느 곳이든 클릭/터치하면 음악 시작
+        window.addEventListener('click', playMusic);
+        window.addEventListener('touchstart', playMusic);
+
         const scroller = document.getElementById('main-scroller');
         const scene = document.getElementById('sphere-scene');
-        // ... 나머지 JS 로직 (열기/닫기/AI 등)은 기존과 동일하게 작동합니다.
         
-        // 하단 버튼 토글 기능만 main-scroller에 맞춰 업데이트
         document.getElementById('heart-btn').onclick = () => {
             const isGrid = document.body.classList.toggle('grid-mode');
             cards.forEach(c => c.style.transform = isGrid ? 'none' : c.dataset.sphereTransform);
-            // 그리드 모드일 때만 스크롤 허용
             scroller.scrollTop = 0;
+            playMusic(); // 버튼 클릭 시에도 음악 재생 시도
         };
 
-        /* [기존 스크립트 그대로 유지...] */
         const granimInstance = new Granim({
             element: '#canvas-bg', direction: 'top-bottom',
             states : { "default-state": { gradients: [['#050507', '#1a0f2e'], ['#0f172a', '#050507']], transitionSpeed: 8000 } }
         });
+        
         const modal = document.getElementById('modal'), modalImg = document.getElementById('modal-img'), aiBtn = document.getElementById('ai-rank-btn');
         const procOverlay = document.getElementById('processing-overlay'), procBar = document.getElementById('proc-bar');
         const count = 37, cards = [], radius = window.innerWidth < 768 ? 250 : 450;
+        
         for (let i = 0; i < count; i++) {
             const index = i + 1, num = String(index).padStart(3, '0'), ext = index <= 19 ? 'jpg' : 'png', src = `images/image-${num}.${ext}`;
             const img = document.createElement('img');
@@ -112,14 +131,25 @@
             const x = radius * Math.sin(phi) * Math.cos(theta), y = radius * Math.sin(phi) * Math.sin(theta), z = radius * Math.cos(phi);
             const tf = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
             img.style.transform = tf; img.dataset.sphereTransform = tf;
-            img.onclick = (e) => { e.stopPropagation(); openModal(src); };
+            
+            img.onclick = (e) => { 
+                e.stopPropagation(); 
+                openModal(src); 
+                playMusic(); // 사진 클릭 시에도 음악 재생 시도
+            };
             scene.appendChild(img); cards.push(img);
         }
+        
         function openModal(src) { modalImg.src = src; modal.style.display = 'flex'; }
         function closeModal() { modal.style.display = 'none'; }
-        aiBtn.onclick = async function() { /* 분석 로직... */ 
+        
+        aiBtn.onclick = async function() { 
+            playMusic(); // AI 버튼 클릭 시에도 음악 재생 시도
             procOverlay.style.display = 'flex';
-            setTimeout(() => { procOverlay.style.display = 'none'; openModal(cards[Math.floor(Math.random()*count)].src); }, 2000);
+            setTimeout(() => { 
+                procOverlay.style.display = 'none'; 
+                openModal(cards[Math.floor(Math.random()*count)].src); 
+            }, 2000);
         };
     </script>
 </body>
