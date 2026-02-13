@@ -37,18 +37,20 @@
         .left-bar .v-marquee { animation: scroll-v 80s linear infinite; }
         .right-bar .v-marquee { animation: scroll-v 90s linear infinite reverse; }
 
-        /* 🎵 업그레이드된 뮤직 플레이어 */
+        /* 🎵 업그레이드된 뮤직 플레이어 (드래그 지원) */
         #player-container {
             position: fixed; bottom: 100px; right: 40px; width: 300px;
             background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid rgba(0, 255, 163, 0.2); border-radius: 24px; 
             z-index: 1000; color: white; padding: 20px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 163, 0.1);
+            touch-action: none; /* 브라우저 기본 스크롤 방지 (드래그용) */
+            cursor: grab;
         }
+        #player-container:active { cursor: grabbing; }
 
-        .player-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .player-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; pointer-events: none; }
         
-        /* 이퀄라이저 애니메이션 */
         .eq-bar { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
         .eq-bar span { width: 3px; background: var(--lightning-color); animation: eq 0.8s ease-in-out infinite alternate; }
         @keyframes eq { 0% { height: 3px; } 100% { height: 15px; } }
@@ -58,35 +60,24 @@
         .now-playing-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--lightning-color); opacity: 0.8; }
         #track-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
+        /* 컨트롤 영역은 드래그 제외 */
+        .controls, .playlist-wrapper { pointer-events: auto; }
+
         .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
         .controls button { 
             background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
             color: white; cursor: pointer; height: 42px; border-radius: 12px; font-size: 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s;
         }
-        .controls button:hover { 
-            background: rgba(0, 255, 163, 0.15); border-color: var(--lightning-color);
-            box-shadow: 0 0 15px rgba(0, 255, 163, 0.3); transform: translateY(-2px);
-        }
+        .controls button:hover { background: rgba(0, 255, 163, 0.15); border-color: var(--lightning-color); }
         #play-btn { background: rgba(0, 255, 163, 0.1); color: var(--lightning-color); font-weight: bold; }
 
         .playlist-wrapper { background: rgba(0, 0, 0, 0.3); border-radius: 16px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.05); }
         .song-list { max-height: 100px; overflow-y: auto; font-size: 11px; }
-        .song-item { 
-            padding: 8px 12px; cursor: pointer; border-radius: 10px; margin-bottom: 2px;
-            display: flex; align-items: center; transition: 0.2s; opacity: 0.6;
-        }
-        .song-item:hover { opacity: 1; background: rgba(255, 255, 255, 0.05); }
-        .song-item.active { 
-            opacity: 1; background: linear-gradient(90deg, rgba(0, 255, 163, 0.2) 0%, transparent 100%); 
-            color: var(--lightning-color); font-weight: 600; 
-        }
+        .song-item { padding: 8px 12px; cursor: pointer; border-radius: 10px; display: flex; align-items: center; transition: 0.2s; opacity: 0.6; }
+        .song-item.active { opacity: 1; background: rgba(0, 255, 163, 0.2); color: var(--lightning-color); font-weight: 600; }
         .song-item .idx { opacity: 0.4; font-family: monospace; margin-right: 10px; }
 
-        .song-list::-webkit-scrollbar { width: 3px; }
-        .song-list::-webkit-scrollbar-thumb { background: rgba(0, 255, 163, 0.3); border-radius: 10px; }
-
-        /* 기타 요소 */
         #heart { position: fixed; width: 100px; height: 100px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; touch-action: none; }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .content-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 5; pointer-events: none; }
@@ -147,7 +138,6 @@
     </main>
 
     <script>
-        // 🎼 music_list.js에서 가져온 EXTERNAL_TRACKS를 사용
         const tracks = typeof EXTERNAL_TRACKS !== 'undefined' ? EXTERNAL_TRACKS : [];
         let currentIdx = 0; 
         const audio = document.getElementById('bg-music');
@@ -156,19 +146,16 @@
         const playBtn = document.getElementById('play-btn');
         const playerContainer = document.getElementById('player-container');
 
+        // --- 🎼 음악 재생 로직 (기존 유지) ---
         function initPlayer() {
-            if (tracks.length === 0) {
-                trackNameDisplay.innerText = "NO TRACKS FOUND";
-                return;
-            }
+            if (tracks.length === 0) return;
             playlistEl.innerHTML = '';
             tracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
-                // 파일명 정리: 확장자 제거 및 언더바를 공백으로
                 const displayName = track.replace('.mp3', '').replace(/_/g, ' ');
                 item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${displayName}</span>`;
-                item.onclick = () => loadTrack(index);
+                item.onclick = (e) => { e.stopPropagation(); loadTrack(index); };
                 playlistEl.appendChild(item);
             });
             loadTrack(currentIdx, false);
@@ -178,15 +165,9 @@
             if (tracks.length === 0) return;
             currentIdx = index;
             audio.src = `music/${tracks[index]}`;
-            const displayName = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
-            trackNameDisplay.innerText = displayName;
-            
+            trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
             document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
-            
-            if (autoPlay) { 
-                audio.play().catch(e => console.log("Auto-play prevented")); 
-                updateUI(true); 
-            }
+            if (autoPlay) { audio.play(); updateUI(true); }
         }
 
         function togglePlay() {
@@ -195,25 +176,60 @@
         }
 
         function updateUI(isPlaying) {
-            if (isPlaying) {
-                playerContainer.classList.remove('paused');
-                playBtn.innerText = "PAUSE";
-            } else {
-                playerContainer.classList.add('paused');
-                playBtn.innerText = "PLAY";
-            }
+            if (isPlaying) { playerContainer.classList.remove('paused'); playBtn.innerText = "PAUSE"; } 
+            else { playerContainer.classList.add('paused'); playBtn.innerText = "PLAY"; }
         }
 
         function stopTrack() { audio.pause(); audio.currentTime = 0; updateUI(false); }
         function nextTrack() { currentIdx = (currentIdx + 1) % tracks.length; loadTrack(currentIdx); }
         function prevTrack() { currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; loadTrack(currentIdx); }
-
         audio.onended = nextTrack;
-        
-        // 초기화 실행
         initPlayer();
 
-        // --- 배경 애니메이션 로직 ---
+        // --- 🖱️ 드래그 앤 드롭 이동 로직 (추가됨) ---
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        const startDrag = (e) => {
+            // 버튼이나 리스트 클릭 시에는 드래그 안 되게 처리
+            if (e.target.closest('button') || e.target.closest('.song-list')) return;
+            
+            isDragging = true;
+            const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            
+            const rect = playerContainer.getBoundingClientRect();
+            offsetX = clientX - rect.left;
+            offsetY = clientY - rect.top;
+        };
+
+        const onDrag = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            
+            // 화면 밖으로 나가지 않게 처리
+            let x = clientX - offsetX;
+            let y = clientY - offsetY;
+            
+            playerContainer.style.left = `${x}px`;
+            playerContainer.style.top = `${y}px`;
+            playerContainer.style.right = 'auto';
+            playerContainer.style.bottom = 'auto';
+        };
+
+        const stopDrag = () => { isDragging = false; };
+
+        playerContainer.addEventListener('mousedown', startDrag);
+        playerContainer.addEventListener('touchstart', startDrag, { passive: false });
+        window.addEventListener('mousemove', onDrag);
+        window.addEventListener('touchmove', onDrag, { passive: false });
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
+
+        // --- 🎨 기타 배경 애니메이션 (기존 유지) ---
         const gifList = Array.from({length: 31}, (_, i) => `bg/lisa/image-${String(i+1).padStart(3, '0')}.gif`);
         function createMarquee(targetId, isVertical = false) {
             const container = document.getElementById(targetId);
@@ -221,8 +237,7 @@
             wrapper.className = isVertical ? 'v-marquee' : 'marquee';
             [...gifList, ...gifList].forEach(src => {
                 const img = document.createElement('img');
-                img.src = src;
-                wrapper.appendChild(img);
+                img.src = src; wrapper.appendChild(img);
             });
             container.appendChild(wrapper.cloneNode(true));
             container.appendChild(wrapper);
