@@ -6,13 +6,13 @@
     <title>2026 Future Gallery</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
-        :root { --accent:#00ffa3; --glow:rgba(0,255,163,0.4); --heart-red:#ff4d6d; }
+        :root { --accent:#00ffa3; --glow:rgba(0,255,163,0.4); --heart-red:#ff4d6d; --glass-bg: rgba(15, 23, 42, 0.7); }
         
         /* 1. 기본 레이아웃: 스크롤 봉쇄 */
         html, body { margin:0; padding:0; width:100%; height:100dvh; background:#050507; overflow:hidden; position:fixed; }
         body { color:white; font-family:'Inter',sans-serif; -webkit-tap-highlight-color:transparent; }
 
-        /* 2. 스크롤 전용 컨테이너 (그리드 모드 시 여기서만 스크롤 발생) */
+        /* 2. 스크롤 전용 컨테이너 */
         #main-scroller { 
             position:absolute; inset:0; overflow-x:hidden; overflow-y:hidden; 
             perspective:2000px; z-index:1; -webkit-overflow-scrolling:touch; 
@@ -37,20 +37,46 @@
 
         /* 4. 📌 하단 네비게이션 */
         .bottom-nav { 
-            position:fixed!important; 
-            bottom:max(30px, env(safe-area-inset-bottom))!important; 
-            left:50%!important; 
-            transform:translateX(-50%)!important; 
-            z-index:999999!important; 
-            display:flex!important; 
-            align-items:center; gap:15px; 
-            pointer-events:auto!important; 
-            width:max-content; 
+            position:fixed!important; bottom:max(30px, env(safe-area-inset-bottom))!important; 
+            left:30px!important; z-index:999999!important; 
+            display:flex!important; align-items:center; gap:15px; 
+            pointer-events:auto!important; width:max-content; 
         }
 
         #heart-btn { width:60px; height:60px; background:var(--heart-red); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; box-shadow:0 0 25px rgba(255,77,109,0.6); flex-shrink:0; }
         #ai-rank-btn { padding:0 25px; height:50px; background:rgba(0,0,0,0.9); border:1px solid var(--accent); color:var(--accent); border-radius:25px; cursor:pointer; font-weight:bold; backdrop-filter:blur(15px); white-space:nowrap; flex-shrink:0; }
         
+        /* 🎵 뮤직 플레이어 스타일 (index 페이지와 동일) */
+        #player-container {
+            position: fixed; bottom: 30px; right: 30px; width: 280px;
+            background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(0, 255, 163, 0.2); border-radius: 24px; 
+            z-index: 1000000; color: white; padding: 18px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .player-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .eq-bar { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+        .eq-bar span { width: 3px; background: var(--accent); animation: eq 0.8s ease-in-out infinite alternate; }
+        @keyframes eq { 0% { height: 3px; } 100% { height: 14px; } }
+        .paused .eq-bar span { animation-play-state: paused; height: 3px; }
+        .now-playing-container { flex: 1; overflow: hidden; }
+        .now-playing-label { font-size: 8px; text-transform: uppercase; color: var(--accent); letter-spacing: 1px; }
+        #track-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+        .controls button { 
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: white; cursor: pointer; height: 38px; border-radius: 10px; font-size: 11px;
+            transition: all 0.3s;
+        }
+        .controls button:hover { background: rgba(0, 255, 163, 0.15); border-color: var(--accent); }
+        .playlist-wrapper { background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .song-list { max-height: 80px; overflow-y: auto; font-size: 10px; }
+        .song-item { padding: 6px 10px; cursor: pointer; border-radius: 8px; display: flex; align-items: center; transition: 0.2s; opacity: 0.6; }
+        .song-item.active { opacity: 1; background: rgba(0, 255, 163, 0.2); color: var(--accent); font-weight: 600; }
+        .song-item .idx { opacity: 0.4; margin-right: 8px; font-family: monospace; }
+        .song-list::-webkit-scrollbar { width: 2px; }
+        .song-list::-webkit-scrollbar-thumb { background: var(--accent); }
+
         /* 기타 UI */
         .nav { position:fixed; top:20px; left:20px; z-index:1000000; }
         .btn { padding:10px 18px; border:1px solid var(--accent); color:var(--accent); text-decoration:none; background:rgba(0,0,0,0.5); border-radius:30px; font-weight:bold; }
@@ -58,21 +84,40 @@
         .loader { width:220px; height:4px; background:rgba(255,255,255,0.1); margin-top:25px; border-radius:2px; position:relative; overflow:hidden; }
         .loader-bar { width:0%; height:100%; background:var(--accent); position:absolute; }
         #modal { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:3000000; backdrop-filter:blur(20px); }
-
-        /* 오디오 숨기기 */
-        #bg-music { display: none; }
     </style>
 </head>
 <body>
-    <audio id="bg-music" loop>
-        <source src="music/DDU_DU_DDU_DU.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="bg-music"></audio>
 
     <canvas id="canvas-bg"></canvas>
     <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
 
     <div id="main-scroller">
         <div id="sphere-scene"></div>
+    </div>
+
+    <div id="player-container" class="paused">
+        <div class="player-header">
+            <div class="eq-bar">
+                <span style="animation-delay: 0.1s"></span>
+                <span style="animation-delay: 0.3s"></span>
+                <span style="animation-delay: 0.2s"></span>
+                <span style="animation-delay: 0.4s"></span>
+            </div>
+            <div class="now-playing-container">
+                <div class="now-playing-label">Now Playing</div>
+                <div id="track-name">READY TO PLAY</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="prevTrack()">◁◁</button>
+            <button id="play-btn" onclick="togglePlay()">PLAY</button>
+            <button onclick="stopTrack()">■</button>
+            <button onclick="nextTrack()">▷▷</button>
+        </div>
+        <div class="playlist-wrapper">
+            <div class="song-list" id="playlist"></div>
+        </div>
     </div>
     
     <div class="bottom-nav">
@@ -90,20 +135,52 @@
     <div id="modal" onclick="closeModal()"><img id="modal-img" src="" style="max-width:90%; max-height:80%;"></div>
 
     <script>
-        // 🎵 음악 재생 로직
-        const music = document.getElementById('bg-music');
-        function playMusic() {
-            if (music.paused) {
-                music.play().catch(e => console.log("Music play blocked"));
-                // 재생 시작 시 이벤트 제거
-                window.removeEventListener('click', playMusic);
-                window.removeEventListener('touchstart', playMusic);
-            }
-        }
-        // 사용자가 페이지의 어느 곳이든 클릭/터치하면 음악 시작
-        window.addEventListener('click', playMusic);
-        window.addEventListener('touchstart', playMusic);
+        // 🎼 음악 데이터 및 엔진 (index 페이지 동기화)
+        const tracks = ["AS_IF_ITS_YOUR_LAST.mp3", "BOOMBAYAH.mp3", "DDU_DU_DDU_DU.mp3", "How_You_Like_That.mp3", "Kill_This_Love.mp3", "Lovesick_Girls.mp3", "Pink_Venom.mp3", "PLAYING_WITH_FIRE.mp3", "Shut_Down.mp3", "WHISTLE.mp3"];
+        let currentIdx = 3; 
+        const audio = document.getElementById('bg-music');
+        const trackNameDisplay = document.getElementById('track-name');
+        const playlistEl = document.getElementById('playlist');
+        const playBtn = document.getElementById('play-btn');
+        const playerContainer = document.getElementById('player-container');
 
+        function initPlayer() {
+            tracks.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
+                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${track.replace('.mp3', '').replace(/_/g, ' ')}</span>`;
+                item.onclick = () => loadTrack(index);
+                playlistEl.appendChild(item);
+            });
+            loadTrack(currentIdx, false);
+        }
+
+        function loadTrack(index, autoPlay = true) {
+            currentIdx = index;
+            audio.src = `music/${tracks[index]}`;
+            trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
+            document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
+            if (autoPlay) { audio.play(); updateUI(true); }
+        }
+
+        function togglePlay() {
+            if (audio.paused) { audio.play().then(() => updateUI(true)).catch(e => console.log("Blocked")); } 
+            else { audio.pause(); updateUI(false); }
+        }
+
+        function updateUI(isPlaying) {
+            if (isPlaying) { playerContainer.classList.remove('paused'); playBtn.innerText = "PAUSE"; } 
+            else { playerContainer.classList.add('paused'); playBtn.innerText = "PLAY"; }
+        }
+
+        function stopTrack() { audio.pause(); audio.currentTime = 0; updateUI(false); }
+        function nextTrack() { currentIdx = (currentIdx + 1) % tracks.length; loadTrack(currentIdx); }
+        function prevTrack() { currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; loadTrack(currentIdx); }
+
+        audio.onended = nextTrack;
+        initPlayer();
+
+        // --- 갤러리 기존 로직 ---
         const scroller = document.getElementById('main-scroller');
         const scene = document.getElementById('sphere-scene');
         
@@ -111,7 +188,7 @@
             const isGrid = document.body.classList.toggle('grid-mode');
             cards.forEach(c => c.style.transform = isGrid ? 'none' : c.dataset.sphereTransform);
             scroller.scrollTop = 0;
-            playMusic(); // 버튼 클릭 시에도 음악 재생 시도
+            if(audio.paused) togglePlay(); 
         };
 
         const granimInstance = new Granim({
@@ -132,11 +209,7 @@
             const tf = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
             img.style.transform = tf; img.dataset.sphereTransform = tf;
             
-            img.onclick = (e) => { 
-                e.stopPropagation(); 
-                openModal(src); 
-                playMusic(); // 사진 클릭 시에도 음악 재생 시도
-            };
+            img.onclick = (e) => { e.stopPropagation(); openModal(src); if(audio.paused) togglePlay(); };
             scene.appendChild(img); cards.push(img);
         }
         
@@ -144,7 +217,7 @@
         function closeModal() { modal.style.display = 'none'; }
         
         aiBtn.onclick = async function() { 
-            playMusic(); // AI 버튼 클릭 시에도 음악 재생 시도
+            if(audio.paused) togglePlay();
             procOverlay.style.display = 'flex';
             setTimeout(() => { 
                 procOverlay.style.display = 'none'; 

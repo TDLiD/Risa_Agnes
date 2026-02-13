@@ -5,67 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 Future Web - LISA</title>
     <style>
-        :root { --heart-glow: #ff4d6d; --lightning-color: #00ffa3; --border-size: 80px; }
+        :root { 
+            --heart-glow: #ff4d6d; 
+            --lightning-color: #00ffa3; 
+            --border-size: 80px; 
+            --glass-bg: rgba(15, 23, 42, 0.7);
+        }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         #bg-canvas { position: fixed; inset: 0; z-index: 0; }
         .grid-bg { position: fixed; inset: -50%; width: 200vw; height: 200vh; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; transform: rotateX(60deg); opacity: 0.2; z-index: 1; pointer-events: none; }
 
-        /* 📌 GIF 테두리 레이아웃 고도화 */
+        /* 📌 GIF 테두리 레이아웃 */
         .gif-border { position: fixed; z-index: 10; pointer-events: none; display: flex; overflow: hidden; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
         .gif-border img { width: var(--border-size); height: var(--border-size); object-fit: cover; border: 1px solid rgba(0, 255, 163, 0.3); flex-shrink: 0; }
 
-        /* 위치 및 크기 정의 */
         .top-bar { top: 0; left: 0; width: 100vw; height: var(--border-size); }
         .bottom-bar { bottom: 0; left: 0; width: 100vw; height: var(--border-size); }
         .left-bar { top: 0; left: 0; width: var(--border-size); height: 100vh; flex-direction: column; }
         .right-bar { top: 0; right: 0; width: var(--border-size); height: 100vh; flex-direction: column; }
 
-        /* 📌 무한 루프 애니메이션 최적화 */
         .marquee { display: flex; flex-shrink: 0; gap: 0; }
         .v-marquee { display: flex; flex-direction: column; flex-shrink: 0; gap: 0; }
 
-        /* 가로 스크롤 */
         @keyframes scroll-h { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         .top-bar .marquee { animation: scroll-h 60s linear infinite; }
         .bottom-bar .marquee { animation: scroll-h 70s linear infinite reverse; }
 
-        /* 세로 스크롤 */
         @keyframes scroll-v { from { transform: translateY(0); } to { transform: translateY(-50%); } }
         .left-bar .v-marquee { animation: scroll-v 80s linear infinite; }
         .right-bar .v-marquee { animation: scroll-v 90s linear infinite reverse; }
 
-        /* 말풍선 스타일 */
-        .bubble {
-            position: fixed; padding: 12px 18px; background: #fff; color: #000; border-radius: 20px;
-            font-size: 14px; font-weight: 800; z-index: 99999; pointer-events: none; white-space: nowrap;
-            box-shadow: 0 10px 30px rgba(0,255,163,0.6); opacity: 0;
-            transform: scale(0.3) translateY(20px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 2px solid var(--lightning-color);
-        }
-        .bubble.active { opacity: 1; transform: scale(1) translateY(0); }
-        .bubble::after {
-            content: ''; position: absolute; border-style: solid; border-width: 12px 10px 0;
-            border-color: #fff transparent; display: block; width: 0;
-            bottom: -11px; left: 50%; transform: translateX(-50%);
+        /* 🎵 업그레이드된 뮤직 플레이어 */
+        #player-container {
+            position: fixed; bottom: 100px; right: 40px; width: 300px;
+            background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(0, 255, 163, 0.2); border-radius: 24px; 
+            z-index: 1000; color: white; padding: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 163, 0.1);
         }
 
+        .player-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        
+        /* 이퀄라이저 애니메이션 */
+        .eq-bar { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
+        .eq-bar span { width: 3px; background: var(--lightning-color); animation: eq 0.8s ease-in-out infinite alternate; }
+        @keyframes eq { 0% { height: 3px; } 100% { height: 15px; } }
+        .paused .eq-bar span { animation-play-state: paused; height: 3px; }
+
+        .now-playing-container { flex: 1; overflow: hidden; }
+        .now-playing-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--lightning-color); opacity: 0.8; }
+        #track-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        .controls button { 
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: white; cursor: pointer; height: 42px; border-radius: 12px; font-size: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .controls button:hover { 
+            background: rgba(0, 255, 163, 0.15); border-color: var(--lightning-color);
+            box-shadow: 0 0 15px rgba(0, 255, 163, 0.3); transform: translateY(-2px);
+        }
+        #play-btn { background: rgba(0, 255, 163, 0.1); color: var(--lightning-color); font-weight: bold; }
+
+        .playlist-wrapper { background: rgba(0, 0, 0, 0.3); border-radius: 16px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .song-list { max-height: 100px; overflow-y: auto; font-size: 11px; }
+        .song-item { 
+            padding: 8px 12px; cursor: pointer; border-radius: 10px; margin-bottom: 2px;
+            display: flex; align-items: center; transition: 0.2s; opacity: 0.6;
+        }
+        .song-item:hover { opacity: 1; background: rgba(255, 255, 255, 0.05); }
+        .song-item.active { 
+            opacity: 1; background: linear-gradient(90deg, rgba(0, 255, 163, 0.2) 0%, transparent 100%); 
+            color: var(--lightning-color); font-weight: 600; 
+        }
+        .song-item .idx { opacity: 0.4; font-family: monospace; margin-right: 10px; }
+
+        .song-list::-webkit-scrollbar { width: 3px; }
+        .song-list::-webkit-scrollbar-thumb { background: rgba(0, 255, 163, 0.3); border-radius: 10px; }
+
+        /* 기타 요소 */
         #heart { position: fixed; width: 100px; height: 100px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; touch-action: none; }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .content-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 5; pointer-events: none; }
         .huge-title { font-size: clamp(2rem, 8vw, 6rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,163,0.5); }
         .flash-overlay { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 999999; transition: opacity 0.4s ease-in; }
         .flash-overlay.active { opacity: 1; }
-
-        /* 오디오 컨트롤러 숨기기 */
-        #bg-music { display: none; }
     </style>
 </head>
 <body>
-    <audio id="bg-music" loop>
-        <source src="music/How_You_Like_That.mp3" type="audio/mpeg">
-    </audio>
-
+    <audio id="bg-music"></audio>
     <canvas id="bg-canvas"></canvas>
     <div class="grid-bg"></div>
     <div class="flash-overlay" id="flash"></div>
@@ -74,6 +104,32 @@
     <div class="gif-border bottom-bar" id="border-bottom"></div>
     <div class="gif-border left-bar" id="border-left"></div>
     <div class="gif-border right-bar" id="border-right"></div>
+
+    <div id="player-container" class="paused">
+        <div class="player-header">
+            <div class="eq-bar">
+                <span style="animation-delay: 0.1s"></span>
+                <span style="animation-delay: 0.3s"></span>
+                <span style="animation-delay: 0.2s"></span>
+                <span style="animation-delay: 0.4s"></span>
+            </div>
+            <div class="now-playing-container">
+                <div class="now-playing-label">Now Playing</div>
+                <div id="track-name">READY TO PLAY</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="prevTrack()">◁◁</button>
+            <button id="play-btn" onclick="togglePlay()">PLAY</button>
+            <button onclick="stopTrack()">■</button>
+            <button onclick="nextTrack()">▷▷</button>
+        </div>
+
+        <div class="playlist-wrapper">
+            <div class="song-list" id="playlist"></div>
+        </div>
+    </div>
 
     <svg id="heart" viewBox="0 0 120 120">
         <defs>
@@ -86,124 +142,81 @@
 
     <main class="content-wrapper">
         <h1 class="huge-title">BEYOND<br>FUTURE<br>♡LISA LOVE♥</h1>
-        <p style="font-size: 14px; opacity: 0.6; margin-top: 20px;">Click anywhere to start Music 🎵</p>
+        <p style="font-size: 14px; opacity: 0.6; margin-top: 20px;">Stylish Cyber Music Player Loaded 🎵</p>
     </main>
 
     <script>
-        // 🎵 음악 재생 컨트롤 로직
-        const music = document.getElementById('bg-music');
-        
-        function playMusic() {
-            if (music.paused) {
-                music.play()
-                .then(() => {
-                    console.log("Music started!");
-                    // 재생 성공 시 더 이상 이벤트 리스너가 필요 없으므로 삭제
-                    window.removeEventListener('click', playMusic);
-                    window.removeEventListener('touchstart', playMusic);
-                })
-                .catch(e => console.log("Playback blocked by browser:", e));
+        const tracks = ["AS_IF_ITS_YOUR_LAST.mp3", "BOOMBAYAH.mp3", "DDU_DU_DDU_DU.mp3", "How_You_Like_That.mp3", "Kill_This_Love.mp3", "Lovesick_Girls.mp3", "Pink_Venom.mp3", "PLAYING_WITH_FIRE.mp3", "Shut_Down.mp3", "WHISTLE.mp3"];
+        let currentIdx = 3; 
+        const audio = document.getElementById('bg-music');
+        const trackNameDisplay = document.getElementById('track-name');
+        const playlistEl = document.getElementById('playlist');
+        const playBtn = document.getElementById('play-btn');
+        const playerContainer = document.getElementById('player-container');
+
+        function initPlayer() {
+            tracks.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
+                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${track.replace('.mp3', '').replace(/_/g, ' ')}</span>`;
+                item.onclick = () => loadTrack(index);
+                playlistEl.appendChild(item);
+            });
+            loadTrack(currentIdx, false);
+        }
+
+        function loadTrack(index, autoPlay = true) {
+            currentIdx = index;
+            audio.src = `music/${tracks[index]}`;
+            trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
+            document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
+            if (autoPlay) { audio.play(); updateUI(true); }
+        }
+
+        function togglePlay() {
+            if (audio.paused) { audio.play(); updateUI(true); } 
+            else { audio.pause(); updateUI(false); }
+        }
+
+        function updateUI(isPlaying) {
+            if (isPlaying) {
+                playerContainer.classList.remove('paused');
+                playBtn.innerText = "PAUSE";
+            } else {
+                playerContainer.classList.add('paused');
+                playBtn.innerText = "PLAY";
             }
         }
 
-        // 페이지 내 모든 클릭 및 터치에 반응하여 음악 재생
-        window.addEventListener('click', playMusic);
-        window.addEventListener('touchstart', playMusic);
+        function stopTrack() { audio.pause(); audio.currentTime = 0; updateUI(false); }
+        function nextTrack() { currentIdx = (currentIdx + 1) % tracks.length; loadTrack(currentIdx); }
+        function prevTrack() { currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; loadTrack(currentIdx); }
 
+        audio.onended = nextTrack;
+        initPlayer();
+
+        // --- 배경 애니메이션 로직 ---
         const gifList = Array.from({length: 31}, (_, i) => `bg/lisa/image-${String(i+1).padStart(3, '0')}.gif`);
-        
         function createMarquee(targetId, isVertical = false) {
             const container = document.getElementById(targetId);
             const wrapper = document.createElement('div');
             wrapper.className = isVertical ? 'v-marquee' : 'marquee';
-            
-            const quadrupledList = [...gifList, ...gifList, ...gifList, ...gifList];
-            quadrupledList.forEach(src => {
+            [...gifList, ...gifList].forEach(src => {
                 const img = document.createElement('img');
                 img.src = src;
                 wrapper.appendChild(img);
             });
-            
             container.appendChild(wrapper.cloneNode(true));
             container.appendChild(wrapper);
         }
-
-        createMarquee('border-top', false);
-        createMarquee('border-bottom', false);
-        createMarquee('border-left', true);
-        createMarquee('border-right', true);
-
-        const messages = [
-            "LISA, cahayamu lebih terang dari siapapun! ✨",
-            "Hari ini pun kamu yang terbaik, LISA! 💖",
-            "Jangan menyerah, masa depan menantimu 🚀",
-            "Senyum LISA mengubah dunia 😊",
-            "Kamu tidak sendirian, kami ada untukmu 🤝",
-            "Semua impianmu akan terwujud 🌈",
-            "LISA, kehadiranmu saja sudah sempurna 💎",
-            "Tak apa pelan, yang 중요해! 🐢",
-            "Kerja kerasmu luar biasa! 🔥",
-            "Besok akan 더 밝을 거야 ☀️",
-            "LISA, muse abadi kami 🎨",
-            "Fajar pasti tiba 🌌",
-            "Percayalah pada dirimu 🌟",
-            "Boleh istirahat sejenak 🌿",
-            "Bangga padamu! 👏",
-            "Cinta dan harapan LISA 🌸",
-            "Semangat membara! ⚡",
-            "Good job LISA! 🫂",
-            "LISA yang cantik 🌹",
-            "Ada bahagia di depan 🎈"
-        ];
-
-        function showRandomBubble() {
-            const old = document.querySelector('.bubble');
-            if(old) old.remove();
-
-            const allImages = document.querySelectorAll('.gif-border img');
-            const visibleImages = Array.from(allImages).filter(img => {
-                const r = img.getBoundingClientRect();
-                return (r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth);
-            });
-
-            if (visibleImages.length === 0) return;
-            const target = visibleImages[Math.floor(Math.random() * visibleImages.length)];
-            const rect = target.getBoundingClientRect();
-
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble';
-            bubble.innerText = messages[Math.floor(Math.random() * messages.length)];
-            document.body.appendChild(bubble);
-
-            const bRect = bubble.getBoundingClientRect();
-            let x = rect.left + (rect.width / 2) - (bRect.width / 2);
-            let y = rect.top - bRect.height - 15;
-
-            if (x < 10) x = 10;
-            if (x + bRect.width > window.innerWidth - 10) x = window.innerWidth - bRect.width - 10;
-            if (y < 85) y = rect.bottom + 15;
-
-            bubble.style.left = x + 'px';
-            bubble.style.top = y + 'px';
-            requestAnimationFrame(() => bubble.classList.add('active'));
-            setTimeout(() => {
-                bubble.classList.remove('active');
-                setTimeout(() => bubble.remove(), 500);
-            }, 2500);
-        }
-        setInterval(showRandomBubble, 3000);
+        createMarquee('border-top', false); createMarquee('border-bottom', false);
+        createMarquee('border-left', true); createMarquee('border-right', true);
 
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
-        let particles = [];
-        let width, height;
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        let particles = [], width, height;
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
 
         class Particle {
             constructor() { this.reset(); }
@@ -221,31 +234,25 @@
                 ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(x, y, this.size, 0, Math.PI * 2); ctx.fill();
             }
         }
-        for (let i = 0; i < (width < 768 ? 100 : 200); i++) particles.push(new Particle());
-
+        for (let i = 0; i < 150; i++) particles.push(new Particle());
         function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; ctx.fillRect(0, 0, width, height);
             particles.forEach(p => { p.update(); p.draw(); });
             requestAnimationFrame(animate);
         }
         animate();
 
         const heart = document.getElementById('heart'), flash = document.getElementById('flash');
-        let hSize = 100, posX = width/2, posY = height/2, velX = 1.2, velY = 1.0;
+        let posX = width/2, posY = height/2, velX = 1.2, velY = 1.0;
         function moveHeart() {
             posX += velX; posY += velY;
-            const pad = 90;
-            if (posX + hSize > width - pad || posX < pad) velX *= -1;
-            if (posY + hSize > height - pad || posY < pad) velY *= -1;
+            if (posX + 100 > width - 90 || posX < 90) velX *= -1;
+            if (posY + 100 > height - 90 || posY < 90) velY *= -1;
             heart.style.left = posX + 'px'; heart.style.top = posY + 'px';
             requestAnimationFrame(moveHeart);
         }
         moveHeart();
-        
-        heart.addEventListener('click', (e) => {
-            e.stopPropagation(); // 중복 재생 방지
-            playMusic(); // 다음 페이지 가기 전 음악 재생 시도
+        heart.addEventListener('click', () => {
             flash.classList.add('active');
             setTimeout(() => { window.location.href = "pics.html"; }, 400);
         });
