@@ -1,0 +1,22 @@
+const EXTERNAL_TRACKS = [
+    "AS_IF_ITS_YOUR_LAST.mp3",
+    "BOOMBAYAH.mp3",
+    "DDU_DU_DDU_DU.mp3",
+    "Dont_Know_What_To_Do.mp3",
+    "Forever_Young.mp3",
+    "How_You_Like_That.mp3",
+    "Ice_Cream.mp3",
+    "JENNIE_SOLO.mp3",
+    "JISOO_FLOWER.mp3",
+    "Kill_This_Love.mp3",
+    "LISA_MONEY.mp3",
+    "Lovesick_Girls.mp3",
+    "Pink_Venom.mp3",
+    "PLAYING_WITH_FIRE.mp3",
+    "PRETTY_SAVAGE.mp3",
+    "ROSE_The_Ground.mp3",
+    "Shut_Down.mp3",
+    "STAY.mp3",
+    "Typa_Girl.mp3",
+    "WHISTLE.mp3"
+];
