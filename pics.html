@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>2026 Future Gallery</title>
+    <script src="music/music_list.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
         :root { --accent:#00ffa3; --glow:rgba(0,255,163,0.4); --heart-red:#ff4d6d; --glass-bg: rgba(15, 23, 42, 0.7); }
@@ -46,7 +47,7 @@
         #heart-btn { width:60px; height:60px; background:var(--heart-red); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; box-shadow:0 0 25px rgba(255,77,109,0.6); flex-shrink:0; }
         #ai-rank-btn { padding:0 25px; height:50px; background:rgba(0,0,0,0.9); border:1px solid var(--accent); color:var(--accent); border-radius:25px; cursor:pointer; font-weight:bold; backdrop-filter:blur(15px); white-space:nowrap; flex-shrink:0; }
         
-        /* 🎵 뮤직 플레이어 스타일 (index 페이지와 동일) */
+        /* 🎵 뮤직 플레이어 스타일 */
         #player-container {
             position: fixed; bottom: 30px; right: 30px; width: 280px;
             background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
@@ -135,9 +136,9 @@
     <div id="modal" onclick="closeModal()"><img id="modal-img" src="" style="max-width:90%; max-height:80%;"></div>
 
     <script>
-        // 🎼 음악 데이터 및 엔진 (index 페이지 동기화)
-        const tracks = ["AS_IF_ITS_YOUR_LAST.mp3", "BOOMBAYAH.mp3", "DDU_DU_DDU_DU.mp3", "How_You_Like_That.mp3", "Kill_This_Love.mp3", "Lovesick_Girls.mp3", "Pink_Venom.mp3", "PLAYING_WITH_FIRE.mp3", "Shut_Down.mp3", "WHISTLE.mp3"];
-        let currentIdx = 3; 
+        // 🎼 음악 데이터 및 엔진 (EXTERNAL_TRACKS 변수 사용)
+        const tracks = typeof EXTERNAL_TRACKS !== 'undefined' ? EXTERNAL_TRACKS : [];
+        let currentIdx = 0; 
         const audio = document.getElementById('bg-music');
         const trackNameDisplay = document.getElementById('track-name');
         const playlistEl = document.getElementById('playlist');
@@ -145,10 +146,13 @@
         const playerContainer = document.getElementById('player-container');
 
         function initPlayer() {
+            if (tracks.length === 0) return;
+            playlistEl.innerHTML = '';
             tracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
-                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${track.replace('.mp3', '').replace(/_/g, ' ')}</span>`;
+                const displayName = track.replace('.mp3', '').replace(/_/g, ' ');
+                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${displayName}</span>`;
                 item.onclick = () => loadTrack(index);
                 playlistEl.appendChild(item);
             });
@@ -156,15 +160,20 @@
         }
 
         function loadTrack(index, autoPlay = true) {
+            if (tracks.length === 0) return;
             currentIdx = index;
             audio.src = `music/${tracks[index]}`;
             trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
             document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
-            if (autoPlay) { audio.play(); updateUI(true); }
+            if (autoPlay) { 
+                audio.play().then(() => updateUI(true)).catch(e => console.log("Blocked by Browser")); 
+            }
         }
 
         function togglePlay() {
-            if (audio.paused) { audio.play().then(() => updateUI(true)).catch(e => console.log("Blocked")); } 
+            if (audio.paused) { 
+                audio.play().then(() => updateUI(true)).catch(e => console.log("Blocked")); 
+            } 
             else { audio.pause(); updateUI(false); }
         }
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 Future Web - LISA</title>
+    <script src="music/music_list.js"></script>
     <style>
         :root { 
             --heart-glow: #ff4d6d; 
@@ -146,8 +147,9 @@
     </main>
 
     <script>
-        const tracks = ["AS_IF_ITS_YOUR_LAST.mp3", "BOOMBAYAH.mp3", "DDU_DU_DDU_DU.mp3", "How_You_Like_That.mp3", "Kill_This_Love.mp3", "Lovesick_Girls.mp3", "Pink_Venom.mp3", "PLAYING_WITH_FIRE.mp3", "Shut_Down.mp3", "WHISTLE.mp3"];
-        let currentIdx = 3; 
+        // 🎼 music_list.js에서 가져온 EXTERNAL_TRACKS를 사용
+        const tracks = typeof EXTERNAL_TRACKS !== 'undefined' ? EXTERNAL_TRACKS : [];
+        let currentIdx = 0; 
         const audio = document.getElementById('bg-music');
         const trackNameDisplay = document.getElementById('track-name');
         const playlistEl = document.getElementById('playlist');
@@ -155,10 +157,17 @@
         const playerContainer = document.getElementById('player-container');
 
         function initPlayer() {
+            if (tracks.length === 0) {
+                trackNameDisplay.innerText = "NO TRACKS FOUND";
+                return;
+            }
+            playlistEl.innerHTML = '';
             tracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
-                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${track.replace('.mp3', '').replace(/_/g, ' ')}</span>`;
+                // 파일명 정리: 확장자 제거 및 언더바를 공백으로
+                const displayName = track.replace('.mp3', '').replace(/_/g, ' ');
+                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${displayName}</span>`;
                 item.onclick = () => loadTrack(index);
                 playlistEl.appendChild(item);
             });
@@ -166,11 +175,18 @@
         }
 
         function loadTrack(index, autoPlay = true) {
+            if (tracks.length === 0) return;
             currentIdx = index;
             audio.src = `music/${tracks[index]}`;
-            trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
+            const displayName = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
+            trackNameDisplay.innerText = displayName;
+            
             document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
-            if (autoPlay) { audio.play(); updateUI(true); }
+            
+            if (autoPlay) { 
+                audio.play().catch(e => console.log("Auto-play prevented")); 
+                updateUI(true); 
+            }
         }
 
         function togglePlay() {
@@ -193,6 +209,8 @@
         function prevTrack() { currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; loadTrack(currentIdx); }
 
         audio.onended = nextTrack;
+        
+        // 초기화 실행
         initPlayer();
 
         // --- 배경 애니메이션 로직 ---
