@@ -2,308 +2,133 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
     <title>2026 Future Gallery</title>
     <script src="music/music_list.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
-        :root { --accent:#00ffa3; --glow:rgba(0,255,163,0.4); --heart-red:#ff4d6d; --glass-bg: rgba(15, 23, 42, 0.7); }
-        html, body { margin:0; padding:0; width:100%; height:100dvh; background:#050507; overflow:hidden; position:fixed; }
-        body { color:white; font-family:'Inter',sans-serif; -webkit-tap-highlight-color:transparent; }
-        
-/* 🖼️ 배경 이미지 설정 수정 */
-        #fixed-bg-img {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            
-            /* 가로세로 비율을 유지하며 화면에 맞춤 */
-            width: 100%;
-            height: 100%;
-            
-            /* 'cover' 대신 'contain'을 쓰면 이미지 전체가 보이지만 여백이 생깁니다.
-               전체적인 느낌을 유지하며 잘림을 최소화하려면 아래 설정을 추천합니다. */
-            object-fit: contain; 
-            
-            /* 배경색이 검은색이므로 contain 사용 시 남는 공간은 검게 보입니다. */
-            background-color: #050507; 
-            
-            z-index: -1;
-            opacity: 0.5; /* 밝기는 기호에 따라 0.3~0.6 사이로 조절하세요 */
-            pointer-events: none;
-        }
-
-        /* 모바일 전용 최적화 (화면이 세로로 길 때) */
-        @media (max-width: 768px) {
-            #fixed-bg-img {
-                /* 모바일에서는 높이 기준으로 이미지를 맞춰 전체 실루엣이 보이게 함 */
-                width: auto;
-                height: 100%;
-                object-fit: contain;
-            }
-        }
-
-        #main-scroller { position:absolute; inset:0; overflow-x:hidden; overflow-y:hidden; perspective:2000px; z-index:1; -webkit-overflow-scrolling:touch; }
-        body.grid-mode #main-scroller { overflow-y:auto; }
-        #canvas-bg { position:fixed; inset:0; z-index:-2; pointer-events:none; }
-        #sphere-scene { position:absolute; top:50%; left:50%; width:0; height:0; transform-style:preserve-3d; animation:rotateEarth 30s linear infinite; transition:all 0.8s; }
-        body.grid-mode #sphere-scene { animation:none!important; transform:none!important; position:relative!important; top:0!important; left:0!important; width:100%!important; height:auto!important; display:grid!important; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr))!important; gap:15px!important; padding:80px 20px 180px 20px!important; box-sizing:border-box!important; }
-        @keyframes rotateEarth { from { transform:translate(-50%,-50%) rotateX(-5deg) rotateY(0deg); } to { transform:translate(-50%,-50%) rotateX(-5deg) rotateY(360deg); } }
-        
-        .photo-card { position:absolute; width:150px; height:150px; left:-75px; top:-75px; object-fit:cover; border-radius:12px; border:2px solid rgba(255,255,255,0.2); cursor:pointer; transition:all 0.6s; filter:brightness(0.7); backface-visibility:hidden; }
-        body.grid-mode .photo-card { position:relative!important; left:0!important; top:0!important; width:100%!important; height:auto!important; aspect-ratio:1/1; transform:none!important; filter:brightness(1); }
-        
-        .bottom-nav { position:fixed!important; bottom:max(30px, env(safe-area-inset-bottom))!important; left:30px!important; z-index:999999!important; display:flex!important; align-items:center; gap:15px; pointer-events:auto!important; width:max-content; }
-        #heart-btn { width:60px; height:60px; background:var(--heart-red); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; box-shadow:0 0 25px rgba(255,77,109,0.6); flex-shrink:0; }
-        #ai-rank-btn { padding:0 25px; height:50px; background:rgba(0,0,0,0.9); border:1px solid var(--accent); color:var(--accent); border-radius:25px; cursor:pointer; font-weight:bold; backdrop-filter:blur(15px); white-space:nowrap; flex-shrink:0; }
-
-        #player-container { 
-            position: fixed; bottom: 30px; right: 30px; width: 280px; 
-            background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%); 
-            border: 1px solid rgba(0, 255, 163, 0.2); border-radius: 24px; 
-            z-index: 1000000; color: white; padding: 18px; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            touch-action: none; cursor: grab;
-        }
-        #player-container:active { cursor: grabbing; }
-
-        .player-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; pointer-events: none; }
-        .eq-bar { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
-        .eq-bar span { width: 3px; background: var(--accent); animation: eq 0.8s ease-in-out infinite alternate; }
-        @keyframes eq { 0% { height: 3px; } 100% { height: 14px; } }
-        .paused .eq-bar span { animation-play-state: paused; height: 3px; }
-        .now-playing-container { flex: 1; overflow: hidden; }
-        .now-playing-label { font-size: 8px; text-transform: uppercase; color: var(--accent); letter-spacing: 1px; }
-        #track-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        .controls, .playlist-wrapper { pointer-events: auto; }
-        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
-        .controls button { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; cursor: pointer; height: 38px; border-radius: 10px; font-size: 11px; transition: all 0.3s; }
-        .controls button:hover { background: rgba(0, 255, 163, 0.15); border-color: var(--accent); }
-        
-        .playlist-wrapper { background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .song-list { max-height: 80px; overflow-y: auto; font-size: 10px; }
-        .song-item { padding: 6px 10px; cursor: pointer; border-radius: 8px; display: flex; align-items: center; transition: 0.2s; opacity: 0.6; }
-        .song-item.active { opacity: 1; background: rgba(0, 255, 163, 0.2); color: var(--accent); font-weight: 600; }
-        .song-item .idx { opacity: 0.4; margin-right: 8px; font-family: monospace; }
-        
-        .nav { position:fixed; top:20px; left:20px; z-index:1000000; }
-        .btn { padding:10px 18px; border:1px solid var(--accent); color:var(--accent); text-decoration:none; background:rgba(0,0,0,0.5); border-radius:30px; font-weight:bold; }
-        #processing-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:2000000; backdrop-filter:blur(15px); }
-        .loader { width:220px; height:4px; background:rgba(255,255,255,0.1); margin-top:25px; border-radius:2px; position:relative; overflow:hidden; }
-        .loader-bar { width:0%; height:100%; background:var(--accent); position:absolute; }
-        #modal { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:3000000; backdrop-filter:blur(20px); }
+        :root{--accent:#00ffa3;--glow:rgba(0,255,163,0.4);--heart-red:#ff4d6d;--glass-bg:rgba(15,23,42,0.7)}
+        html,body{margin:0;padding:0;width:100%;height:100dvh;background:#050507;overflow:hidden;position:fixed;color:white;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}
+        #fixed-bg-img{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:100%;object-fit:contain;background-color:#050507;z-index:-1;opacity:.5;pointer-events:none}
+        @media(max-width:768px){#fixed-bg-img{width:auto;height:100%}}
+        #main-scroller{position:absolute;inset:0;overflow:hidden;perspective:2000px;z-index:1}
+        body.grid-mode #main-scroller{overflow-y:auto}
+        #canvas-bg{position:fixed;inset:0;z-index:-2;pointer-events:none}
+        #sphere-scene{position:absolute;top:50%;left:50%;width:0;height:0;transform-style:preserve-3d;animation:rotateEarth 30s linear infinite;transition:all .8s}
+        body.grid-mode #sphere-scene{animation:none!important;transform:none!important;position:relative!important;top:0!important;left:0!important;width:100%!important;height:auto!important;display:grid!important;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))!important;gap:15px!important;padding:80px 20px 180px 20px!important;box-sizing:border-box!important}
+        @keyframes rotateEarth{from{transform:translate(-50%,-50%) rotateX(-5deg) rotateY(0deg)}to{transform:translate(-50%,-50%) rotateX(-5deg) rotateY(360deg)}}
+        .photo-card{position:absolute;width:150px;height:150px;left:-75px;top:-75px;object-fit:cover;border-radius:12px;border:2px solid rgba(255,255,255,0.2);cursor:pointer;transition:all .6s;filter:brightness(.7);backface-visibility:hidden}
+        body.grid-mode .photo-card{position:relative!important;left:0!important;top:0!important;width:100%!important;height:auto!important;aspect-ratio:1/1;transform:none!important;filter:brightness(1)}
+        .bottom-nav{position:fixed!important;bottom:max(30px,env(safe-area-inset-bottom))!important;left:30px!important;z-index:999999!important;display:flex!important;align-items:center;gap:15px;pointer-events:auto!important;width:max-content}
+        #heart-btn{width:60px;height:60px;background:var(--heart-red);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;box-shadow:0 0 25px rgba(255,77,109,.6)}
+        #ai-rank-btn{padding:0 25px;height:50px;background:rgba(0,0,0,.9);border:1px solid var(--accent);color:var(--accent);border-radius:25px;cursor:pointer;font-weight:bold;backdrop-filter:blur(15px);white-space:nowrap}
+        #p-cont{position:fixed;bottom:30px;right:30px;width:280px;background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(0,255,163,.2);border-radius:24px;z-index:1000000;padding:18px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);touch-action:none;cursor:grab}
+        #p-cont:active{cursor:grabbing}
+        .p-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;pointer-events:none}
+        .eq{display:flex;align-items:flex-end;gap:2px;height:14px}
+        .eq span{width:3px;background:var(--accent);animation:eq .8s ease-in-out infinite alternate}
+        @keyframes eq{0%{height:3px}100%{height:14px}}
+        .paused .eq span{animation-play-state:paused;height:3px}
+        .np-c{flex:1;overflow:hidden}
+        .np-l{font-size:8px;text-transform:uppercase;color:var(--accent);letter-spacing:1px}
+        #t-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ctrls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+        .ctrls button{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:white;cursor:pointer;height:38px;border-radius:10px;font-size:11px}
+        .s-list{max-height:80px;overflow-y:auto;font-size:10px;background:rgba(0,0,0,.3);border-radius:10px;padding:5px}
+        .s-item{padding:6px 10px;cursor:pointer;border-radius:8px;display:flex;align-items:center;opacity:.6}
+        .s-item.active{opacity:1;background:rgba(0,255,163,.2);color:var(--accent);font-weight:600}
+        .nav{position:fixed;top:20px;left:20px;z-index:1000000}
+        .btn{padding:10px 18px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;background:rgba(0,0,0,.5);border-radius:30px;font-weight:bold}
+        #proc-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:2000000;backdrop-filter:blur(15px)}
+        .loader{width:220px;height:4px;background:rgba(255,255,255,.1);margin-top:25px;border-radius:2px;position:relative;overflow:hidden}
+        .l-bar{width:0%;height:100%;background:var(--accent);position:absolute;transition:width .2s}
+        #modal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:3000000;backdrop-filter:blur(20px)}
     </style>
 </head>
 <body>
-    <audio id="bg-music"></audio>
+    <audio id="audio"></audio>
     <canvas id="canvas-bg"></canvas>
-    
-    <img src="images/old/image-045.png" id="fixed-bg-img" alt="Background">
-
+    <img src="images/old/image-045.png" id="fixed-bg-img">
     <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
-
-    <div id="main-scroller">
-        <div id="sphere-scene"></div>
+    <div id="main-scroller"><div id="sphere-scene"></div></div>
+    <div id="p-cont" class="paused">
+        <div class="p-header">
+            <div class="eq"><span style="animation-delay:.1s"></span><span style="animation-delay:.3s"></span><span style="animation-delay:.2s"></span><span style="animation-delay:.4s"></span></div>
+            <div class="np-c"><div class="np-l">Now Playing</div><div id="t-name">READY</div></div>
+        </div>
+        <div class="ctrls"><button onclick="prevT()">◁◁</button><button id="p-btn" onclick="toggleP()">PLAY</button><button onclick="stopT()">■</button><button onclick="nextT()">▷▷</button></div>
+        <div class="s-list" id="pl"></div>
     </div>
-
-    <div id="player-container" class="paused">
-        <div class="player-header">
-            <div class="eq-bar">
-                <span style="animation-delay: 0.1s"></span>
-                <span style="animation-delay: 0.3s"></span>
-                <span style="animation-delay: 0.2s"></span>
-                <span style="animation-delay: 0.4s"></span>
-            </div>
-            <div class="now-playing-container">
-                <div class="now-playing-label">Now Playing</div>
-                <div id="track-name">READY TO PLAY</div>
-            </div>
-        </div>
-        <div class="controls">
-            <button onclick="prevTrack()">◁◁</button>
-            <button id="play-btn" onclick="togglePlay()">PLAY</button>
-            <button onclick="stopTrack()">■</button>
-            <button onclick="nextTrack()">▷▷</button>
-        </div>
-        <div class="playlist-wrapper">
-            <div class="song-list" id="playlist"></div>
-        </div>
-    </div>
-    
     <div class="bottom-nav">
-        <button id="heart-btn">
-            <svg viewBox="0 0 24 24" width="30" height="30" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        </button>
+        <button id="heart-btn"><svg viewBox="0 0 24 24" width="30" height="30" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
         <button id="ai-rank-btn">WHICH ONE IS THE PRETTIEST?</button>
     </div>
-
-    <div id="processing-overlay">
-        <div class="proc-text" id="proc-status" style="color:var(--accent)">SCANNING...</div>
-        <div class="loader"><div class="loader-bar" id="proc-bar"></div></div>
-    </div>
-
-    <div id="modal" onclick="closeModal()"><img id="modal-img" src="" style="max-width:90%; max-height:80%;"></div>
-
+    <div id="proc-ov"><div style="color:var(--accent)">SCANNING...</div><div class="loader"><div class="l-bar" id="p-bar"></div></div></div>
+    <div id="modal" onclick="closeM()"><img id="m-img" style="max-width:90%;max-height:80%;border-radius:8px;box-shadow:0 0 30px var(--glow)"></div>
     <script>
-        // --- 🎼 음악 플레이어 로직 ---
-        const tracks = typeof EXTERNAL_TRACKS !== 'undefined' ? EXTERNAL_TRACKS : [];
-        let currentIdx = 0; 
-        const audio = document.getElementById('bg-music');
-        const trackNameDisplay = document.getElementById('track-name');
-        const playlistEl = document.getElementById('playlist');
-        const playBtn = document.getElementById('play-btn');
-        const playerContainer = document.getElementById('player-container');
-
-        function initPlayer() {
-            if (tracks.length === 0) return;
-            playlistEl.innerHTML = '';
-            tracks.forEach((track, index) => {
-                const item = document.createElement('div');
-                item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
-                const displayName = track.replace('.mp3', '').replace(/_/g, ' ');
-                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${displayName}</span>`;
-                item.onclick = (e) => { e.stopPropagation(); loadTrack(index); };
-                playlistEl.appendChild(item);
-            });
-            loadTrack(currentIdx, false);
+        const audio=document.getElementById('audio'),pBtn=document.getElementById('p-btn'),tName=document.getElementById('t-name'),plEl=document.getElementById('pl'),pCont=document.getElementById('p-cont'),tracks=typeof EXTERNAL_TRACKS!=='undefined'?EXTERNAL_TRACKS:[];
+        let cIdx=0,cards=[];
+        function initP(){
+            if(!tracks.length)return;plEl.innerHTML=tracks.map((t,i)=>`<div class="s-item ${i===cIdx?'active':''}" onclick="loadT(${i})"><span class="idx">${String(i+1).padStart(2,'0')}</span><span>${t.replace('.mp3','').replace(/_/g,' ')}</span></div>`).join('');
+            loadT(cIdx,false);
         }
-
-        function loadTrack(index, autoPlay = true) {
-            if (tracks.length === 0) return;
-            currentIdx = index;
-            audio.src = `music/${tracks[index]}`;
-            trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
-            document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
-            if (autoPlay) audio.play().then(() => updateUI(true)).catch(e => console.log("Blocked"));
+        function loadT(idx,a=true){
+            cIdx=idx;audio.src=`music/${tracks[idx]}`;tName.innerText=tracks[idx].replace('.mp3','').replace(/_/g,' ');
+            document.querySelectorAll('.s-item').forEach((it,i)=>it.classList.toggle('active',i===idx));
+            if(a)audio.play().then(()=>updUI(true));else updUI(false);
         }
-
-        function togglePlay() {
-            if (audio.paused) audio.play().then(() => updateUI(true)).catch(e => console.log("Blocked"));
-            else { audio.pause(); updateUI(false); }
-        }
-
-        function updateUI(isPlaying) {
-            if (isPlaying) { playerContainer.classList.remove('paused'); playBtn.innerText = "PAUSE"; } 
-            else { playerContainer.classList.add('paused'); playBtn.innerText = "PLAY"; }
-        }
-        function nextTrack() { currentIdx = (currentIdx + 1) % tracks.length; loadTrack(currentIdx); }
-        function prevTrack() { currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; loadTrack(currentIdx); }
-        function stopTrack() { audio.pause(); audio.currentTime = 0; updateUI(false); }
-        audio.onended = nextTrack;
-        initPlayer();
-
-        // --- 🖱️ 드래그 앤 드롭 이동 로직 ---
-        let isDragging = false;
-        let startX, startY, initialX, initialY;
-
-        const startDrag = (e) => {
-            if (e.target.closest('button') || e.target.closest('.song-list')) return;
-            isDragging = true;
-            const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-            const rect = playerContainer.getBoundingClientRect();
-            startX = clientX; startY = clientY;
-            initialX = rect.left; initialY = rect.top;
+        function toggleP(){if(audio.paused)audio.play().then(()=>updUI(true));else{audio.pause();updUI(false)}}
+        function updUI(p){pCont.classList.toggle('paused',!p);pBtn.innerText=p?"PAUSE":"PLAY"}
+        function nextT(){cIdx=(cIdx+1)%tracks.length;loadT(cIdx)}
+        function prevT(){cIdx=(cIdx-1+tracks.length)%tracks.length;loadT(cIdx)}
+        function stopT(){audio.pause();audio.currentTime=0;updUI(false)}
+        audio.onended=nextT;
+        let isDrag=false,sX,sY,iX,iY;
+        const sD=(e)=>{
+            if(e.target.closest('button')||e.target.closest('.s-list'))return;
+            isDrag=true;const cX=e.type==='touchstart'?e.touches[0].clientX:e.clientX,cY=e.type==='touchstart'?e.touches[0].clientY:e.clientY;
+            const r=pCont.getBoundingClientRect();sX=cX;sY=cY;iX=r.left;iY=r.top;
         };
-
-        const onDrag = (e) => {
-            if (!isDragging) return;
-            const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-            playerContainer.style.left = `${initialX + (clientX - startX)}px`;
-            playerContainer.style.top = `${initialY + (clientY - startY)}px`;
-            playerContainer.style.right = 'auto';
-            playerContainer.style.bottom = 'auto';
+        const oD=(e)=>{
+            if(!isDrag)return;const cX=e.type==='touchmove'?e.touches[0].clientX:e.clientX,cY=e.type==='touchmove'?e.touches[0].clientY:e.clientY;
+            pCont.style.left=`${iX+(cX-sX)}px`;pCont.style.top=`${iY+(cY-sY)}px`;pCont.style.right='auto';pCont.style.bottom='auto';
         };
-
-        const stopDrag = () => { isDragging = false; };
-        playerContainer.addEventListener('mousedown', startDrag);
-        playerContainer.addEventListener('touchstart', startDrag, { passive: false });
-        window.addEventListener('mousemove', onDrag);
-        window.addEventListener('touchmove', onDrag, { passive: false });
-        window.addEventListener('mouseup', stopDrag);
-        window.addEventListener('touchend', stopDrag);
-
-        // --- 🖼️ 갤러리 엔진 로직 ---
-        const scene = document.getElementById('sphere-scene');
-        const scroller = document.getElementById('main-scroller');
-        const modal = document.getElementById('modal'), modalImg = document.getElementById('modal-img'), aiBtn = document.getElementById('ai-rank-btn');
-        const procOverlay = document.getElementById('processing-overlay');
-        const cards = [];
-
-        new Granim({
-            element: '#canvas-bg', direction: 'top-bottom',
-            states : { "default-state": { gradients: [['#050507', '#1a0f2e'], ['#0f172a', '#050507']], transitionSpeed: 8000 } }
-        });
-
-async function loadGallery() {
-            try {
-                const response = await fetch('images/photos.json');
-                const data = await response.json();
-                
-                // [수정 포인트] data.photos 대신 data.old 를 사용합니다.
-                const photos = data.old; 
-                
-                if (!photos) {
-                    console.error("'old' data not found in photos.json");
-                    return;
-                }
-
-                const count = photos.length;
-                const radius = window.innerWidth < 768 ? 250 : 450;
-
-                photos.forEach((filename, i) => {
-                    const src = `images/old/${filename}`;
-                    const img = document.createElement('img');
-                    img.src = src;
-                    img.className = 'photo-card';
-                    
-                    // 구체 배치 계산 로직 (기존과 동일)
-                    const phi = Math.acos(-1 + (2 * i) / count);
-                    const theta = Math.sqrt(count * Math.PI) * phi;
-                    const x = radius * Math.sin(phi) * Math.cos(theta);
-                    const y = radius * Math.sin(phi) * Math.sin(theta);
-                    const z = radius * Math.cos(phi);
-                    const tf = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${theta}rad) rotateX(${phi - Math.PI/2}rad)`;
-                    
-                    img.style.transform = tf;
-                    img.dataset.sphereTransform = tf;
-                    img.onclick = (e) => { 
-                        e.stopPropagation(); 
-                        openModal(src); 
-                        if(audio.paused) togglePlay(); 
-                    };
-                    scene.appendChild(img);
-                    cards.push(img);
+        pCont.addEventListener('mousedown',sD);pCont.addEventListener('touchstart',sD,{passive:false});
+        window.addEventListener('mousemove',oD);window.addEventListener('touchmove',oD,{passive:false});
+        window.addEventListener('mouseup',()=>isDrag=false);window.addEventListener('touchend',()=>isDrag=false);
+        const scene=document.getElementById('sphere-scene'),scroller=document.getElementById('main-scroller'),modal=document.getElementById('modal'),mImg=document.getElementById('m-img');
+        new Granim({element:'#canvas-bg',direction:'top-bottom',states:{"default-state":{gradients:[['#050507','#1a0f2e'],['#0f172a','#050507']],transitionSpeed:8000}}});
+        async function loadG(){
+            try{
+                const res=await fetch('images/photos.json'),data=await res.json(),photos=data.old||[];
+                const count=photos.length,radius=window.innerWidth<768?250:450;
+                photos.forEach((f,i)=>{
+                    const src=`images/old/${f}`,img=document.createElement('img');
+                    img.src=src;img.className='photo-card';
+                    const phi=Math.acos(-1+(2*i)/count),theta=Math.sqrt(count*Math.PI)*phi;
+                    const x=radius*Math.sin(phi)*Math.cos(theta),y=radius*Math.sin(phi)*Math.sin(theta),z=radius*Math.cos(phi);
+                    const tf=`translate3d(${x}px,${y}px,${z}px) rotateY(${theta}rad) rotateX(${phi-Math.PI/2}rad)`;
+                    img.style.transform=tf;img.dataset.sphereTransform=tf;
+                    img.onclick=(e)=>{e.stopPropagation();openM(src);if(audio.paused)toggleP()};
+                    scene.appendChild(img);cards.push(img);
                 });
-            } catch (error) { 
-                console.error("Gallery load failed:", error); 
-            }
+            }catch(e){}
         }
-
-        function openModal(src) { modalImg.src = src; modal.style.display = 'flex'; }
-        function closeModal() { modal.style.display = 'none'; }
-
-        document.getElementById('heart-btn').onclick = () => {
-            const isGrid = document.body.classList.toggle('grid-mode');
-            cards.forEach(c => c.style.transform = isGrid ? 'none' : c.dataset.sphereTransform);
-            scroller.scrollTop = 0;
-            if(audio.paused) togglePlay(); 
+        function openM(s){mImg.src=s;modal.style.display='flex'}
+        function closeM(){modal.style.display='none'}
+        document.getElementById('heart-btn').onclick=()=>{
+            const g=document.body.classList.toggle('grid-mode');
+            cards.forEach(c=>c.style.transform=g?'none':c.dataset.sphereTransform);
+            scroller.scrollTop=0;if(audio.paused)toggleP();
         };
-
-        aiBtn.onclick = async function() { 
-            if(audio.paused) togglePlay();
-            procOverlay.style.display = 'flex';
-            setTimeout(() => { 
-                procOverlay.style.display = 'none'; 
-                const randomCard = cards[Math.floor(Math.random() * cards.length)];
-                openModal(randomCard.src); 
-            }, 2000);
+        document.getElementById('ai-rank-btn').onclick=()=>{
+            if(audio.paused)toggleP();
+            const ov=document.getElementById('proc-ov'),bar=document.getElementById('p-bar');
+            ov.style.display='flex';bar.style.width='0%';
+            setTimeout(()=>bar.style.width='100%',100);
+            setTimeout(()=>{ov.style.display='none';openM(cards[Math.floor(Math.random()*cards.length)].src)},2000);
         };
-
-        loadGallery();
+        window.onload=()=>{loadG();initP()};
     </script>
 </body>
 </html>
