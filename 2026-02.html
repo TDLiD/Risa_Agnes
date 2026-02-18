@@ -12,12 +12,11 @@
         .btn{padding:10px 18px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;background:rgba(0,0,0,0.5);border-radius:30px;font-weight:bold;font-size:12px}
         #gallery-viewport{display:flex;flex-wrap:wrap;justify-content:center;gap:60px 30px;padding:100px 20px 200px;perspective:1000px}
         .stack-group{position:relative;width:160px;height:220px;transform-style:preserve-3d}
-        .photo-card{position:absolute;width:100%;height:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:var(--glass);overflow:hidden;cursor:pointer;transition:transform .5s cubic-bezier(.23,1,.32,1),opacity .5s;box-shadow:0 5px 15px rgba(0,0,0,0.3);transform-origin:bottom center}
+        .photo-card{position:absolute;width:100%;height:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:var(--glass);overflow:hidden;cursor:pointer;transition:transform .5s cubic-bezier(.23,1,.32,1),opacity .5s;box-shadow:0 5px 15px rgba(0,0,0,0.3);transform-origin:bottom center;touch-action:none}
         .photo-card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
         .card-tab{position:absolute;top:0;left:0;right:0;height:25px;background:rgba(0,255,163,0.15);font-size:8px;font-weight:bold;color:var(--accent);display:flex;align-items:center;padding:0 10px}
         .photo-card.swiped{transform:translateY(-120%) rotate(-10deg) scale(0.8)!important;opacity:0;pointer-events:none}
         
-        /* 팝업 모달 스타일 */
         #modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;z-index:3000000;backdrop-filter:blur(10px);cursor:zoom-out}
         #modal img{max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;box-shadow:0 0 30px var(--glow);transform:scale(0.9);transition:transform 0.3s ease}
         #modal.active img{transform:scale(1)}
@@ -97,28 +96,54 @@
                 updCard(card,idx,items.length);
                 card.innerHTML=`<div class="card-tab">02 / ${img.split('.')[0]}</div><img src="${imgSrc}" loading="lazy">`;
                 
-                card.onclick=()=>{
-                    if(card.style.zIndex!=cards.length-1)return;
-                    
-                    // 1. 팝업 확대
-                    openModal(imgSrc);
-                    
-                    // 2. 음악 재생 및 카드 스와이프 (기존 기능)
-                    if(audio.paused)toggleP();
-                    card.classList.add('swiped');
-                    setTimeout(()=>{
-                        card.classList.remove('swiped');
-                        cards.forEach(c=>{
-                            let z=parseInt(c.style.zIndex);
-                            c.style.zIndex=(c===card)?0:z+1;
-                            updCard(c,parseInt(c.style.zIndex),items.length);
-                        });
-                        cards.unshift(cards.pop());
-                    },500);
+                // --- 터치/스와이프 로직 추가 ---
+                let tX=0, tY=0, isMove=false;
+
+                card.addEventListener('touchstart', (e)=>{
+                    tX = e.touches[0].clientX;
+                    tY = e.touches[0].clientY;
+                    isMove = false;
+                }, {passive:true});
+
+                card.addEventListener('touchend', (e)=>{
+                    const dX = e.changedTouches[0].clientX - tX;
+                    const dY = e.changedTouches[0].clientY - tY;
+                    const dist = Math.sqrt(dX*dX + dY*dY);
+
+                    if(dist > 30) { // 30px 이상 밀었을 때만 스와이프(넘기기)로 간주
+                        if(card.style.zIndex != cards.length-1) return;
+                        swipeCard(card, cards, items.length);
+                    } else { // 조금만 건드렸을 때는 팝업
+                        if(card.style.zIndex != cards.length-1) return;
+                        openModal(imgSrc);
+                    }
+                });
+
+                // 데스크탑 클릭 호환성
+                card.onclick=(e)=>{
+                    // 모바일 touch와 중복 실행 방지 위해 클릭 시점에 zIndex만 체크
+                    if(card.style.zIndex != cards.length-1) return;
+                    // touch 이벤트가 없는 환경에서만 동작하도록 (보통 모바일은 위 touch이벤이 우선함)
+                    if(e.pointerType === 'mouse') openModal(imgSrc);
                 };
+
                 group.appendChild(card);cards.push(card);
             });
             cont.appendChild(group);
+        }
+
+        function swipeCard(card, cards, total) {
+            if(audio.paused) toggleP();
+            card.classList.add('swiped');
+            setTimeout(()=>{
+                card.classList.remove('swiped');
+                cards.forEach(c=>{
+                    let z=parseInt(c.style.zIndex);
+                    c.style.zIndex=(c===card)?0:z+1;
+                    updCard(c,parseInt(c.style.zIndex),total);
+                });
+                cards.unshift(cards.pop());
+            },500);
         }
 
         function updCard(c,z,t){const i=t-1-z;c.style.transform=`translate3d(0,${i*-4}px,${i*-10}px) rotate(${i*1.5+(Math.random()-0.5)*2}deg)`}
