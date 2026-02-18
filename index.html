@@ -2,293 +2,154 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 Future Web - LISA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Future Hub</title>
     <script src="music/music_list.js"></script>
     <style>
-        :root { 
-            --heart-glow: #ff4d6d; 
-            --lightning-color: #00ffa3; 
-            --border-size: 80px; 
-            --glass-bg: rgba(15, 23, 42, 0.7);
-        }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        :root { --accent:#00ffa3; --glass: rgba(15, 23, 42, 0.7); --heart-red:#ff4d6d; }
+        body { margin:0; background:#050507; color:white; font-family:'Inter',sans-serif; overflow:hidden; }
         
-        #bg-canvas { position: fixed; inset: 0; z-index: 0; }
-        .grid-bg { position: fixed; inset: -50%; width: 200vw; height: 200vh; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; transform: rotateX(60deg); opacity: 0.2; z-index: 1; pointer-events: none; }
+        /* 상단 고정 하트 네비게이션 */
+        .top-nav { position:fixed; top:40px; left:50%; transform:translateX(-50%); display:flex; gap:60px; z-index:100; }
+        .heart-link { text-align:center; text-decoration:none; color:white; transition:0.3s; }
+        .heart-link:hover { transform:scale(1.1); }
+        .heart-icon { width:80px; height:80px; margin-bottom:10px; transition: 0.3s; }
+        .heart-link:hover .heart-icon { filter: drop-shadow(0 0 20px currentColor); }
+        .heart-label { font-size:12px; font-weight:bold; letter-spacing:2px; color:var(--accent); }
 
-        /* 📌 GIF 테두리 레이아웃 */
-        .gif-border { position: fixed; z-index: 10; pointer-events: none; display: flex; overflow: hidden; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
-        .gif-border img { width: var(--border-size); height: var(--border-size); object-fit: cover; border: 1px solid rgba(0, 255, 163, 0.3); flex-shrink: 0; }
+        /* 하단 GIF 무한 루프 선반 */
+        .bottom-shelf { position:fixed; bottom:0; width:100%; height:140px; background:linear-gradient(transparent, rgba(0,255,163,0.05)); overflow:hidden; border-top:1px solid rgba(0,255,163,0.2); z-index: 50; }
+        .gif-track { display:flex; width:max-content; animation: slide 40s linear infinite; align-items: center; height:100%; padding-left: 20px; }
+        .gif-track img { height:90px; margin:0 15px; border-radius:10px; opacity:0.6; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
+        .gif-track img:hover { opacity: 1; border-color: var(--accent); transform: scale(1.05); }
+        @keyframes slide { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 
-        .top-bar { top: 0; left: 0; width: 100vw; height: var(--border-size); }
-        .bottom-bar { bottom: 0; left: 0; width: 100vw; height: var(--border-size); }
-        .left-bar { top: 0; left: 0; width: var(--border-size); height: 100vh; flex-direction: column; }
-        .right-bar { top: 0; right: 0; width: var(--border-size); height: 100vh; flex-direction: column; }
-
-        .marquee { display: flex; flex-shrink: 0; gap: 0; }
-        .v-marquee { display: flex; flex-direction: column; flex-shrink: 0; gap: 0; }
-
-        @keyframes scroll-h { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .top-bar .marquee { animation: scroll-h 60s linear infinite; }
-        .bottom-bar .marquee { animation: scroll-h 70s linear infinite reverse; }
-
-        @keyframes scroll-v { from { transform: translateY(0); } to { transform: translateY(-50%); } }
-        .left-bar .v-marquee { animation: scroll-v 80s linear infinite; }
-        .right-bar .v-marquee { animation: scroll-v 90s linear infinite reverse; }
-
-        /* 🎵 업그레이드된 뮤직 플레이어 (드래그 지원) */
-        #player-container {
-            position: fixed; bottom: 100px; right: 40px; width: 300px;
-            background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
+        /* 중앙 문구 */
+        .main-title { position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none; }
+        .main-title h1 { font-size:4rem; margin:0; letter-spacing:-2px; opacity:0.1; white-space: nowrap; }
+        
+        /* 음악 플레이어 스타일 */
+        #player-container { 
+            position: fixed; bottom: 170px; right: 30px; width: 280px; 
+            background: var(--glass); backdrop-filter: blur(20px); 
             border: 1px solid rgba(0, 255, 163, 0.2); border-radius: 24px; 
-            z-index: 1000; color: white; padding: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 163, 0.1);
-            touch-action: none; /* 브라우저 기본 스크롤 방지 (드래그용) */
-            cursor: grab;
+            z-index: 1000; color: white; padding: 18px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
-        #player-container:active { cursor: grabbing; }
-
-        .player-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; pointer-events: none; }
-        
-        .eq-bar { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
-        .eq-bar span { width: 3px; background: var(--lightning-color); animation: eq 0.8s ease-in-out infinite alternate; }
-        @keyframes eq { 0% { height: 3px; } 100% { height: 15px; } }
-        .paused .eq-bar span { animation-play-state: paused; height: 3px; }
-
-        .now-playing-container { flex: 1; overflow: hidden; }
-        .now-playing-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--lightning-color); opacity: 0.8; }
-        #track-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-
-        /* 컨트롤 영역은 드래그 제외 */
-        .controls, .playlist-wrapper { pointer-events: auto; }
-
-        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
-        .controls button { 
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
-            color: white; cursor: pointer; height: 42px; border-radius: 12px; font-size: 12px;
-            transition: all 0.3s;
-        }
-        .controls button:hover { background: rgba(0, 255, 163, 0.15); border-color: var(--lightning-color); }
-        #play-btn { background: rgba(0, 255, 163, 0.1); color: var(--lightning-color); font-weight: bold; }
-
-        .playlist-wrapper { background: rgba(0, 0, 0, 0.3); border-radius: 16px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .song-list { max-height: 100px; overflow-y: auto; font-size: 11px; }
-        .song-item { padding: 8px 12px; cursor: pointer; border-radius: 10px; display: flex; align-items: center; transition: 0.2s; opacity: 0.6; }
-        .song-item.active { opacity: 1; background: rgba(0, 255, 163, 0.2); color: var(--lightning-color); font-weight: 600; }
-        .song-item .idx { opacity: 0.4; font-family: monospace; margin-right: 10px; }
-
-        #heart { position: fixed; width: 100px; height: 100px; z-index: 100; cursor: pointer; filter: drop-shadow(0 0 20px var(--heart-glow)); animation: pulse 1.5s infinite ease-in-out; touch-action: none; }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .content-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 5; pointer-events: none; }
-        .huge-title { font-size: clamp(2rem, 8vw, 6rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,163,0.5); }
-        .flash-overlay { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 999999; transition: opacity 0.4s ease-in; }
-        .flash-overlay.active { opacity: 1; }
+        .player-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .now-playing-label { font-size: 8px; text-transform: uppercase; color: var(--accent); letter-spacing: 1px; }
+        #track-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+        .controls button { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; cursor: pointer; height: 35px; border-radius: 10px; font-size: 10px; }
+        .controls button:hover { background: rgba(0, 255, 163, 0.15); border-color: var(--accent); }
+        .song-list { max-height: 60px; overflow-y: auto; font-size: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .song-item { padding: 6px 10px; cursor: pointer; opacity: 0.6; }
+        .song-item.active { opacity: 1; color: var(--accent); }
     </style>
 </head>
 <body>
-    <audio id="bg-music"></audio>
-    <canvas id="bg-canvas"></canvas>
-    <div class="grid-bg"></div>
-    <div class="flash-overlay" id="flash"></div>
+    <div class="top-nav">
+        <a href="old.html" class="heart-link" style="color: var(--heart-red);">
+            <svg class="heart-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <div class="heart-label">OLD MEMORIES</div>
+        </a>
+        <a href="2026-02.html" class="heart-link" style="color: var(--accent);">
+            <svg class="heart-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <div class="heart-label">2026 FEBRUARY</div>
+        </a>
+    </div>
 
-    <div class="gif-border top-bar" id="border-top"></div>
-    <div class="gif-border bottom-bar" id="border-bottom"></div>
-    <div class="gif-border left-bar" id="border-left"></div>
-    <div class="gif-border right-bar" id="border-right"></div>
+    <div class="main-title">
+        <h1>FUTURE GALLERY</h1>
+        <p style="color:var(--accent); letter-spacing:5px; opacity: 0.5;">SELECT YOUR TIMELINE</p>
+    </div>
 
-    <div id="player-container" class="paused">
+    <div class="bottom-shelf">
+        <div class="gif-track" id="gif-container"></div>
+    </div>
+
+    <div id="player-container">
         <div class="player-header">
-            <div class="eq-bar">
-                <span style="animation-delay: 0.1s"></span>
-                <span style="animation-delay: 0.3s"></span>
-                <span style="animation-delay: 0.2s"></span>
-                <span style="animation-delay: 0.4s"></span>
-            </div>
             <div class="now-playing-container">
                 <div class="now-playing-label">Now Playing</div>
                 <div id="track-name">READY TO PLAY</div>
             </div>
         </div>
-        
         <div class="controls">
             <button onclick="prevTrack()">◁◁</button>
             <button id="play-btn" onclick="togglePlay()">PLAY</button>
             <button onclick="stopTrack()">■</button>
             <button onclick="nextTrack()">▷▷</button>
         </div>
-
-        <div class="playlist-wrapper">
-            <div class="song-list" id="playlist"></div>
-        </div>
+        <div class="song-list" id="playlist"></div>
+        <audio id="bg-music"></audio>
     </div>
 
-    <svg id="heart" viewBox="0 0 120 120">
-        <defs>
-            <pattern id="imgPattern" width="1" height="1" patternUnits="objectBoundingBox">
-                <image href="bg/bg2.png" width="120" height="120" preserveAspectRatio="xMidYMid slice"/>
-            </pattern>
-        </defs>
-        <path fill="url(#imgPattern)" d="M60,106.75 L52.75,100.15 C27,76.8 10,61.4 10,42.5 C10,27.1 22.1,15 37.5,15 C46.2,15 54.55,19.05 60,25.45 C65.45,19.05 73.8,15 82.5,15 C97.9,15 110,27.1 110,42.5 C110,61.4 93,76.8 67.25,100.15 L60,106.75 Z"/>
-    </svg>
-
-    <main class="content-wrapper">
-        <h1 class="huge-title">BEYOND<br>FUTURE<br>♡LISA LOVE♥</h1>
-        <p style="font-size: 14px; opacity: 0.6; margin-top: 20px;">Stylish Cyber Music Player Loaded 🎵</p>
-    </main>
-
     <script>
+        // 1. GIF 자동 로드 로직
+        async function initGifs() {
+            try {
+                const response = await fetch('images/photos.json');
+                const data = await response.json();
+                const gifs = data.lisa_gifs; // photos.json에 정의한 리스트
+                const container = document.getElementById('gif-container');
+                
+                // 무한 루프 효과를 위해 리스트를 두 번 반복해서 추가
+                const displayList = [...gifs, ...gifs];
+                
+                displayList.forEach(name => {
+                    const img = document.createElement('img');
+                    img.src = `bg/lisa/${name}`; // 실제 경로: bg/lisa/image-xxx.gif
+                    img.alt = "Lisa GIF";
+                    img.onerror = () => img.remove(); // 파일 로드 실패 시 제거
+                    container.appendChild(img);
+                });
+            } catch (e) { console.error("GIF 로딩 에러:", e); }
+        }
+
+        // 2. 음악 플레이어 로직
         const tracks = typeof EXTERNAL_TRACKS !== 'undefined' ? EXTERNAL_TRACKS : [];
-        let currentIdx = 0; 
+        let currentIdx = 0;
         const audio = document.getElementById('bg-music');
         const trackNameDisplay = document.getElementById('track-name');
         const playlistEl = document.getElementById('playlist');
         const playBtn = document.getElementById('play-btn');
-        const playerContainer = document.getElementById('player-container');
 
-        // --- 🎼 음악 재생 로직 (기존 유지) ---
         function initPlayer() {
             if (tracks.length === 0) return;
-            playlistEl.innerHTML = '';
             tracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = `song-item ${index === currentIdx ? 'active' : ''}`;
-                const displayName = track.replace('.mp3', '').replace(/_/g, ' ');
-                item.innerHTML = `<span class="idx">${String(index + 1).padStart(2, '0')}</span><span>${displayName}</span>`;
-                item.onclick = (e) => { e.stopPropagation(); loadTrack(index); };
+                item.innerText = track.replace('.mp3', '').replace(/_/g, ' ');
+                item.onclick = () => loadTrack(index);
                 playlistEl.appendChild(item);
             });
             loadTrack(currentIdx, false);
         }
 
         function loadTrack(index, autoPlay = true) {
-            if (tracks.length === 0) return;
             currentIdx = index;
             audio.src = `music/${tracks[index]}`;
             trackNameDisplay.innerText = tracks[index].replace('.mp3', '').replace(/_/g, ' ');
             document.querySelectorAll('.song-item').forEach((item, i) => item.classList.toggle('active', i === index));
-            if (autoPlay) { audio.play(); updateUI(true); }
+            if (autoPlay) audio.play();
+            playBtn.innerText = autoPlay ? "PAUSE" : "PLAY";
         }
 
         function togglePlay() {
-            if (audio.paused) { audio.play(); updateUI(true); } 
-            else { audio.pause(); updateUI(false); }
+            if (audio.paused) { audio.play(); playBtn.innerText = "PAUSE"; }
+            else { audio.pause(); playBtn.innerText = "PLAY"; }
         }
-
-        function updateUI(isPlaying) {
-            if (isPlaying) { playerContainer.classList.remove('paused'); playBtn.innerText = "PAUSE"; } 
-            else { playerContainer.classList.add('paused'); playBtn.innerText = "PLAY"; }
-        }
-
-        function stopTrack() { audio.pause(); audio.currentTime = 0; updateUI(false); }
-        function nextTrack() { currentIdx = (currentIdx + 1) % tracks.length; loadTrack(currentIdx); }
-        function prevTrack() { currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; loadTrack(currentIdx); }
+        function nextTrack() { loadTrack((currentIdx + 1) % tracks.length); }
+        function prevTrack() { loadTrack((currentIdx - 1 + tracks.length) % tracks.length); }
+        function stopTrack() { audio.pause(); audio.currentTime = 0; playBtn.innerText = "PLAY"; }
         audio.onended = nextTrack;
-        initPlayer();
 
-        // --- 🖱️ 드래그 앤 드롭 이동 로직 (추가됨) ---
-        let isDragging = false;
-        let offsetX, offsetY;
-
-        const startDrag = (e) => {
-            // 버튼이나 리스트 클릭 시에는 드래그 안 되게 처리
-            if (e.target.closest('button') || e.target.closest('.song-list')) return;
-            
-            isDragging = true;
-            const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-            
-            const rect = playerContainer.getBoundingClientRect();
-            offsetX = clientX - rect.left;
-            offsetY = clientY - rect.top;
+        // 실행
+        window.onload = () => {
+            initGifs();
+            initPlayer();
         };
-
-        const onDrag = (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-            
-            // 화면 밖으로 나가지 않게 처리
-            let x = clientX - offsetX;
-            let y = clientY - offsetY;
-            
-            playerContainer.style.left = `${x}px`;
-            playerContainer.style.top = `${y}px`;
-            playerContainer.style.right = 'auto';
-            playerContainer.style.bottom = 'auto';
-        };
-
-        const stopDrag = () => { isDragging = false; };
-
-        playerContainer.addEventListener('mousedown', startDrag);
-        playerContainer.addEventListener('touchstart', startDrag, { passive: false });
-        window.addEventListener('mousemove', onDrag);
-        window.addEventListener('touchmove', onDrag, { passive: false });
-        window.addEventListener('mouseup', stopDrag);
-        window.addEventListener('touchend', stopDrag);
-
-        // --- 🎨 기타 배경 애니메이션 (기존 유지) ---
-        const gifList = Array.from({length: 31}, (_, i) => `bg/lisa/image-${String(i+1).padStart(3, '0')}.gif`);
-        function createMarquee(targetId, isVertical = false) {
-            const container = document.getElementById(targetId);
-            const wrapper = document.createElement('div');
-            wrapper.className = isVertical ? 'v-marquee' : 'marquee';
-            [...gifList, ...gifList].forEach(src => {
-                const img = document.createElement('img');
-                img.src = src; wrapper.appendChild(img);
-            });
-            container.appendChild(wrapper.cloneNode(true));
-            container.appendChild(wrapper);
-        }
-        createMarquee('border-top', false); createMarquee('border-bottom', false);
-        createMarquee('border-left', true); createMarquee('border-right', true);
-
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        let particles = [], width, height;
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize); resize();
-
-        class Particle {
-            constructor() { this.reset(); }
-            reset() {
-                this.angle = Math.random() * Math.PI * 2;
-                this.radius = Math.random() * (width > height ? width : height) * 0.5;
-                this.speed = Math.random() * 0.01 + 0.002;
-                this.size = Math.random() * 1.5 + 0.5;
-                this.color = `hsla(${160 + Math.random() * 40}, 80%, 60%, ${Math.random() * 0.4 + 0.2})`;
-            }
-            update() { this.angle += this.speed; this.radius -= 0.5; if (this.radius <= 0) this.reset(); }
-            draw() {
-                const x = width / 2 + Math.cos(this.angle) * this.radius;
-                const y = height / 2 + Math.sin(this.angle) * this.radius;
-                ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(x, y, this.size, 0, Math.PI * 2); ctx.fill();
-            }
-        }
-        for (let i = 0; i < 150; i++) particles.push(new Particle());
-        function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; ctx.fillRect(0, 0, width, height);
-            particles.forEach(p => { p.update(); p.draw(); });
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        const heart = document.getElementById('heart'), flash = document.getElementById('flash');
-        let posX = width/2, posY = height/2, velX = 1.2, velY = 1.0;
-        function moveHeart() {
-            posX += velX; posY += velY;
-            if (posX + 100 > width - 90 || posX < 90) velX *= -1;
-            if (posY + 100 > height - 90 || posY < 90) velY *= -1;
-            heart.style.left = posX + 'px'; heart.style.top = posY + 'px';
-            requestAnimationFrame(moveHeart);
-        }
-        moveHeart();
-        heart.addEventListener('click', () => {
-            flash.classList.add('active');
-            setTimeout(() => { window.location.href = "pics.html"; }, 400);
-        });
     </script>
 </body>
 </html>
