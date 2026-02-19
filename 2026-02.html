@@ -5,56 +5,123 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
     <title>2026-02 Future Horizon</title>
     <script src="music/music_list.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/granim/2.0.0/granim.min.js"></script>
     <style>
-        :root{--accent:#00ffa3;--glass:rgba(15,23,42,0.8);--glow:rgba(0,255,163,0.4)}
-        body{margin:0;background:#050507;color:white;font-family:'Inter',sans-serif;overflow-x:hidden;min-height:100dvh}
-        .nav{position:fixed;top:20px;left:20px;z-index:2000000}
-        .btn{padding:10px 18px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;background:rgba(0,0,0,0.5);border-radius:30px;font-weight:bold;font-size:12px}
-        #gallery-viewport{display:flex;flex-wrap:wrap;justify-content:center;gap:60px 30px;padding:100px 20px 200px;perspective:1000px}
-        .stack-group{position:relative;width:160px;height:220px;transform-style:preserve-3d}
-        .photo-card{position:absolute;width:100%;height:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:var(--glass);overflow:hidden;cursor:pointer;transition:transform .5s cubic-bezier(.23,1,.32,1),opacity .5s;box-shadow:0 5px 15px rgba(0,0,0,0.3);transform-origin:bottom center;touch-action:none}
-        .photo-card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-        .card-tab{position:absolute;top:0;left:0;right:0;height:25px;background:rgba(0,255,163,0.15);font-size:8px;font-weight:bold;color:var(--accent);display:flex;align-items:center;padding:0 10px}
-        .photo-card.swiped{transform:translateY(-120%) rotate(-10deg) scale(0.8)!important;opacity:0;pointer-events:none}
+        :root{--accent:#00ffa3;--glass:rgba(15,23,42,0.8);--glow:rgba(0,255,163,0.4);--heart-red:#ff4d6d}
+        body{margin:0;background:#050507;color:white;font-family:'Inter',sans-serif;overflow:hidden;height:100dvh;position:fixed;width:100%}
         
-        #modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;z-index:3000000;backdrop-filter:blur(10px);cursor:zoom-out}
-        #modal img{max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;box-shadow:0 0 30px var(--glow);transform:scale(0.9);transition:transform 0.3s ease}
-        #modal.active img{transform:scale(1)}
+        /* 고정 배경 이미지 설정 */
+        #fixed-bg{
+            position: fixed;
+            inset: 0;
+            z-index: -3;
+            background: url('images/2026-02/bg.png') no-repeat center center;
+            background-size: cover;
+            filter: brightness(0.5);
+        }
 
-        #p-cont{position:fixed;bottom:30px;right:30px;width:280px;background:var(--glass);backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(0,255,163,0.2);border-radius:24px;z-index:1000000;padding:18px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);touch-action:none;cursor:grab}
-        #p-cont:active{cursor:grabbing}
-        .p-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;pointer-events:none}
-        .eq{display:flex;align-items:flex-end;gap:2px;height:14px}
-        .eq span{width:3px;background:var(--accent);animation:eq .8s ease-in-out infinite alternate}
-        @keyframes eq{0%{height:3px}100%{height:14px}}
+        #canvas-bg{position:fixed;inset:0;z-index:-2; opacity: 0.4; mix-blend-mode: screen;}
+        
+        /* 3D 갤러리 관련 스타일 */
+        #main-scroller{position:absolute;inset:0;overflow:hidden;perspective:2000px;z-index:1}
+        #sphere-scene{position:absolute;top:50%;left:50%;width:0;height:0;transform-style:preserve-3d;animation:rotateSphere 60s linear infinite;transition:all .8s}
+        @keyframes rotateSphere{from{transform:translate(-50%,-50%) rotateX(-5deg) rotateY(0deg)}to{transform:translate(-50%,-50%) rotateX(-5deg) rotateY(360deg)}}
+        
+        /* 카드 크기 반응형 수정 */
+        .photo-card{
+            position:absolute;
+            width:140px; height:180px; /* 기본 크기 약간 축소 */
+            left:-70px; top:-90px;
+            border-radius:12px;
+            border:1px solid rgba(255,255,255,0.2);
+            background:var(--glass);
+            overflow:hidden;
+            cursor:pointer;
+            transition:all .5s;
+            filter:brightness(.8);
+            backface-visibility:hidden;
+            box-shadow:0 0 15px rgba(0,0,0,0.5);
+        }
+
+        @media (max-width: 768px) {
+            .photo-card {
+                width: 100px; height: 130px; /* 모바일에서 더 작게 */
+                left: -50px; top: -65px;
+            }
+        }
+
+        .photo-card:hover{filter:brightness(1);border-color:var(--accent);box-shadow:0 0 20px var(--glow)}
+        .photo-card img{width:100%;height:100%;object-fit:cover}
+
+        /* 네비게이션 & UI */
+        .nav{position:fixed;top:max(20px, env(safe-area-inset-top));left:20px;z-index:2000000}
+        .btn{padding:8px 15px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;background:rgba(0,0,0,0.5);border-radius:30px;font-weight:bold;font-size:11px}
+        
+        .bottom-nav{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:20px;z-index:9999}
+        #ai-rank-btn{
+            padding:0 20px; height:44px;
+            background:rgba(0,0,0,.8); border:1px solid var(--accent); color:var(--accent);
+            border-radius:22px; cursor:pointer; font-weight:bold; font-size:11px;
+            backdrop-filter:blur(15px); box-shadow:0 0 15px var(--glow);
+        }
+
+        /* 뮤직 플레이어 반응형 수정 */
+        #p-cont{
+            position:fixed; bottom:max(20px, env(safe-area-inset-bottom)); right:20px;
+            width:260px; background:var(--glass); backdrop-filter:blur(20px);
+            border:1px solid rgba(0,255,163,0.2); border-radius:20px;
+            z-index:1000000; padding:15px; box-shadow:0 15px 35px rgba(0,0,0,0.5);
+            touch-action:none;
+        }
+
+        @media (max-width: 480px) {
+            #p-cont {
+                width: calc(100% - 40px); /* 모바일에서는 가로폭을 넓게 */
+                left: 20px; right: 20px;
+                padding: 12px;
+            }
+            .ctrls button { height: 34px; font-size: 10px; }
+        }
+
+        .p-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;pointer-events:none}
+        .eq{display:flex;align-items:flex-end;gap:2px;height:12px}
+        .eq span{width:2px;background:var(--accent);animation:eq .8s ease-in-out infinite alternate}
+        @keyframes eq{0%{height:3px}100%{height:12px}}
         .paused .eq span{animation-play-state:paused;height:3px}
-        .np-c{flex:1;overflow:hidden}
-        .np-l{font-size:8px;text-transform:uppercase;color:var(--accent);letter-spacing:1px}
-        #t-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .ctrls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
-        .ctrls button{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:white;cursor:pointer;height:38px;border-radius:10px;font-size:11px;transition:all .3s}
-        .ctrls button:hover{background:rgba(0,255,163,0.15);border-color:var(--accent)}
-        .pl-w{background:rgba(0,0,0,0.3);border-radius:12px;padding:5px;border:1px solid rgba(255,255,255,0.05)}
-        .s-list{max-height:100px;overflow-y:auto;font-size:10px}
-        .s-item{padding:6px 10px;cursor:pointer;border-radius:8px;display:flex;align-items:center;transition:.2s;opacity:.6}
-        .s-item.active{opacity:1;background:rgba(0,255,163,0.2);color:var(--accent);font-weight:600}
-        .s-item .idx{opacity:.4;margin-right:8px;font-family:monospace}
-        .s-list::-webkit-scrollbar{width:4px}
-        .s-list::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+        #t-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ctrls{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+        .ctrls button{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:white;cursor:pointer;border-radius:8px;}
+        .s-list{max-height:60px;overflow-y:auto;font-size:9px;background:rgba(0,0,0,0.3);border-radius:8px;padding:5px}
+        .s-item{padding:5px 8px;cursor:pointer;border-radius:6px;opacity:.6}
+        .s-item.active{opacity:1;background:rgba(0,255,163,0.2);color:var(--accent)}
+
+        /* 스캔 오버레이 & 모달 */
+        #proc-ov{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:2000000;backdrop-filter:blur(15px)}
+        .loader{width:180px;height:3px;background:rgba(255,255,255,.1);margin-top:20px;border-radius:2px;position:relative;overflow:hidden}
+        .l-bar{width:0%;height:100%;background:var(--accent);position:absolute;transition:width .2s}
+        
+        #modal{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;z-index:3000000;backdrop-filter:blur(10px)}
+        #modal img{max-width:95%;max-height:85%;border-radius:8px;box-shadow:0 0 30px var(--glow); object-fit: contain;}
     </style>
 </head>
 <body>
-    <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
-    <div id="gallery-viewport"></div>
+    <div id="fixed-bg"></div>
+    <canvas id="canvas-bg"></canvas>
 
-    <div id="modal" onclick="closeModal()">
-        <img id="modal-img" src="" alt="Zoomed Photo">
+    <nav class="nav"><a href="index.html" class="btn">← EXIT</a></nav>
+    
+    <div id="main-scroller">
+        <div id="sphere-scene"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <button id="ai-rank-btn">SCAN BEST PHOTO</button>
     </div>
 
     <div id="p-cont" class="paused">
         <div class="p-header">
-            <div class="eq"><span style="animation-delay:0.1s"></span><span style="animation-delay:0.3s"></span><span style="animation-delay:0.2s"></span><span style="animation-delay:0.4s"></span></div>
-            <div class="np-c"><div class="np-l">Now Playing</div><div id="t-name">READY</div></div>
+            <div class="eq"><span></span><span></span><span></span><span></span></div>
+            <div class="np-c"><div style="font-size:7px;color:var(--accent);text-transform:uppercase;">Now Playing</div><div id="t-name">READY</div></div>
         </div>
         <div class="ctrls">
             <button onclick="prevT()">◁◁</button>
@@ -62,130 +129,103 @@
             <button onclick="stopT()">■</button>
             <button onclick="nextT()">▷▷</button>
         </div>
-        <div class="pl-w"><div class="s-list" id="pl"></div></div>
-        <audio id="audio"></audio>
+        <div class="s-list" id="pl"></div>
+        <audio id="audio" playsinline></audio>
     </div>
+
+    <div id="proc-ov">
+        <div style="color:var(--accent);letter-spacing:2px;font-size:12px;">AI SCANNING...</div>
+        <div class="loader"><div class="l-bar" id="p-bar"></div></div>
+    </div>
+
+    <div id="modal" onclick="closeM()"><img id="m-img" src=""></div>
+
     <script>
-        const audio=document.getElementById('audio'),pBtn=document.getElementById('p-btn'),tName=document.getElementById('t-name'),plEl=document.getElementById('pl'),pCont=document.getElementById('p-cont'),tracks=typeof EXTERNAL_TRACKS!=='undefined'?EXTERNAL_TRACKS:[];
-        const modal = document.getElementById('modal'), modalImg = document.getElementById('modal-img');
-        let cIdx=0;
+        const audio=document.getElementById('audio'), pBtn=document.getElementById('p-btn'), tName=document.getElementById('t-name'), plEl=document.getElementById('pl'), pCont=document.getElementById('p-cont'), tracks=typeof EXTERNAL_TRACKS!=='undefined'?EXTERNAL_TRACKS:[];
+        const scene=document.getElementById('sphere-scene'), modal=document.getElementById('modal'), mImg=document.getElementById('m-img');
+        let cIdx=0, cards=[];
+
+        new Granim({element:'#canvas-bg',direction:'top-bottom',states:{"default-state":{gradients:[['#050507','#1a0f2e'],['#0f172a','#050507']],transitionSpeed:8000}}});
 
         async function loadG(){
             try{
-                const res=await fetch('images/photos.json'),data=await res.json(),list=data["2026_02"]||[],view=document.getElementById('gallery-viewport'),size=6;
-                for(let i=0;i<list.length;i+=size)createStack(list.slice(i,i+size),view);
+                const res=await fetch('images/photos.json'), data=await res.json(), photos=data["2026_02"]||[];
+                const count=photos.length;
+                // 모바일 환경에 따른 구체 반지름 조절
+                const radius=window.innerWidth<768?220:450;
+                
+                photos.forEach((f,i)=>{
+                    const img=document.createElement('div');
+                    img.className='photo-card';
+                    
+                    const phi = Math.acos(-1 + (2 * i) / count);
+                    const theta = Math.sqrt(count * Math.PI) * phi;
+                    const x = radius * Math.sin(phi) * Math.cos(theta);
+                    const y = radius * Math.sin(phi) * Math.sin(theta);
+                    const z = radius * Math.cos(phi);
+                    
+                    img.style.transform = `translate3d(${x}px,${y}px,${z}px) rotateY(${theta}rad) rotateX(${phi-Math.PI/2}rad)`;
+                    img.innerHTML = `<img src="images/2026-02/${f}" loading="lazy">`;
+                    
+                    img.onclick=(e)=>{
+                        e.stopPropagation();
+                        openM(`images/2026-02/${f}`);
+                        if(audio.paused) toggleP();
+                    };
+                    
+                    scene.appendChild(img);
+                    cards.push(img);
+                });
             }catch(e){console.error(e)}
         }
 
-        function openModal(src) {
-            modalImg.src = src;
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('active'), 10);
-        }
-
-        function closeModal() {
-            modal.classList.remove('active');
-            setTimeout(() => modal.style.display = 'none', 300);
-        }
-
-        function createStack(items,cont){
-            const group=document.createElement('div');group.className='stack-group';let cards=[];
-            items.slice().reverse().forEach((img,idx)=>{
-                const card=document.createElement('div');card.className='photo-card';card.style.zIndex=idx;
-                const imgSrc = `images/2026-02/${img}`;
-                updCard(card,idx,items.length);
-                card.innerHTML=`<div class="card-tab">02 / ${img.split('.')[0]}</div><img src="${imgSrc}" loading="lazy">`;
-                
-                // --- 터치/스와이프 로직 추가 ---
-                let tX=0, tY=0, isMove=false;
-
-                card.addEventListener('touchstart', (e)=>{
-                    tX = e.touches[0].clientX;
-                    tY = e.touches[0].clientY;
-                    isMove = false;
-                }, {passive:true});
-
-                card.addEventListener('touchend', (e)=>{
-                    const dX = e.changedTouches[0].clientX - tX;
-                    const dY = e.changedTouches[0].clientY - tY;
-                    const dist = Math.sqrt(dX*dX + dY*dY);
-
-                    if(dist > 30) { // 30px 이상 밀었을 때만 스와이프(넘기기)로 간주
-                        if(card.style.zIndex != cards.length-1) return;
-                        swipeCard(card, cards, items.length);
-                    } else { // 조금만 건드렸을 때는 팝업
-                        if(card.style.zIndex != cards.length-1) return;
-                        openModal(imgSrc);
-                    }
-                });
-
-                // 데스크탑 클릭 호환성
-                card.onclick=(e)=>{
-                    // 모바일 touch와 중복 실행 방지 위해 클릭 시점에 zIndex만 체크
-                    if(card.style.zIndex != cards.length-1) return;
-                    // touch 이벤트가 없는 환경에서만 동작하도록 (보통 모바일은 위 touch이벤이 우선함)
-                    if(e.pointerType === 'mouse') openModal(imgSrc);
-                };
-
-                group.appendChild(card);cards.push(card);
-            });
-            cont.appendChild(group);
-        }
-
-        function swipeCard(card, cards, total) {
-            if(audio.paused) toggleP();
-            card.classList.add('swiped');
+        document.getElementById('ai-rank-btn').onclick=()=>{
+            const ov=document.getElementById('proc-ov'), bar=document.getElementById('p-bar');
+            ov.style.display='flex'; bar.style.width='0%';
+            setTimeout(()=>bar.style.width='100%', 100);
             setTimeout(()=>{
-                card.classList.remove('swiped');
-                cards.forEach(c=>{
-                    let z=parseInt(c.style.zIndex);
-                    c.style.zIndex=(c===card)?0:z+1;
-                    updCard(c,parseInt(c.style.zIndex),total);
-                });
-                cards.unshift(cards.pop());
-            },500);
-        }
+                ov.style.display='none';
+                const randomCard = cards[Math.floor(Math.random()*cards.length)];
+                openM(randomCard.querySelector('img').src);
+            }, 1500);
+        };
 
-        function updCard(c,z,t){const i=t-1-z;c.style.transform=`translate3d(0,${i*-4}px,${i*-10}px) rotate(${i*1.5+(Math.random()-0.5)*2}deg)`}
-        
+        function openM(s){mImg.src=s; modal.style.display='flex'}
+        function closeM(){modal.style.display='none'}
+
         function initP(){
-            if(!tracks.length)return;plEl.innerHTML='';
-            tracks.forEach((t,i)=>{
-                const item=document.createElement('div');item.className=`s-item ${i===cIdx?'active':''}`;
-                item.innerHTML=`<span class="idx">${String(i+1).padStart(2,'0')}</span><span>${t.replace('.mp3','').replace(/_/g,' ')}</span>`;
-                item.onclick=(e)=>{e.stopPropagation();loadT(i)};
-                plEl.appendChild(item);
-            });
+            if(!tracks.length)return;
+            plEl.innerHTML=tracks.map((t,i)=>`<div class="s-item ${i===cIdx?'active':''}" onclick="loadT(${i})">${String(i+1).padStart(2,'0')} ${t.replace('.mp3','').replace(/_/g,' ')}</div>`).join('');
             loadT(cIdx,false);
         }
-
         function loadT(idx,a=true){
-            if(!tracks.length)return;cIdx=idx;audio.src=`music/${tracks[idx]}`;
-            tName.innerText=tracks[idx].replace('.mp3','').replace(/_/g,' ');
+            cIdx=idx; audio.src=`music/${tracks[idx]}`; tName.innerText=tracks[idx].replace('.mp3','').replace(/_/g,' ');
             document.querySelectorAll('.s-item').forEach((it,i)=>it.classList.toggle('active',i===idx));
-            if(a)audio.play().then(()=>updUI(true)).catch(e=>{});else updUI(false);
+            if(a)audio.play().then(()=>updUI(true)).catch(e=>{}); else updUI(false);
         }
-
-        function toggleP(){if(audio.paused)audio.play().then(()=>updUI(true));else{audio.pause();updUI(false)}}
-        function updUI(p){if(p){pCont.classList.remove('paused');pBtn.innerText="PAUSE"}else{pCont.classList.add('paused');pBtn.innerText="PLAY"}}
+        function toggleP(){if(audio.paused)audio.play().then(()=>updUI(true)).catch(e=>{});else{audio.pause();updUI(false)}}
+        function updUI(p){pCont.classList.toggle('paused',!p);pBtn.innerText=p?"PAUSE":"PLAY"}
         function nextT(){cIdx=(cIdx+1)%tracks.length;loadT(cIdx)}
         function prevT(){cIdx=(cIdx-1+tracks.length)%tracks.length;loadT(cIdx)}
         function stopT(){audio.pause();audio.currentTime=0;updUI(false)}
-        
         audio.onended=nextT;
+
+        // 터치 드래그 지원 (모바일 전용 최적화)
         let isDrag=false,sX,sY,iX,iY;
-        const sD=(e)=>{
-            if(e.target.closest('button')||e.target.closest('.s-list')||e.target.closest('#modal'))return;
-            isDrag=true;const cX=e.type==='touchstart'?e.touches[0].clientX:e.clientX,cY=e.type==='touchstart'?e.touches[0].clientY:e.clientY;
-            const r=pCont.getBoundingClientRect();sX=cX;sY=cY;iX=r.left;iY=r.top;
+        const dragStart=(e)=>{
+            if(e.target.closest('button')||e.target.closest('.s-list'))return;
+            isDrag=true; const c=e.type.includes('touch')?e.touches[0]:e;
+            const r=pCont.getBoundingClientRect(); sX=c.clientX; sY=c.clientY; iX=r.left; iY=r.top;
         };
-        const oD=(e)=>{
-            if(!isDrag)return;const cX=e.type==='touchmove'?e.touches[0].clientX:e.clientX,cY=e.type==='touchmove'?e.touches[0].clientY:e.clientY;
-            pCont.style.left=`${iX+(cX-sX)}px`;pCont.style.top=`${iY+(cY-sY)}px`;pCont.style.right='auto';pCont.style.bottom='auto';
+        const dragMove=(e)=>{
+            if(!isDrag)return; const c=e.type.includes('touch')?e.touches[0]:e;
+            pCont.style.left=`${iX+(c.clientX-sX)}px`; pCont.style.top=`${iY+(c.clientY-sY)}px`;
+            pCont.style.right='auto'; pCont.style.bottom='auto';
         };
-        pCont.addEventListener('mousedown',sD);pCont.addEventListener('touchstart',sD,{passive:false});
-        window.addEventListener('mousemove',oD);window.addEventListener('touchmove',oD,{passive:false});
-        window.addEventListener('mouseup',()=>isDrag=false);window.addEventListener('touchend',()=>isDrag=false);
+        pCont.addEventListener('mousedown',dragStart); pCont.addEventListener('touchstart',dragStart);
+        window.addEventListener('mousemove',dragMove); window.addEventListener('touchmove',dragMove, {passive:false});
+        window.addEventListener('mouseup',()=>isDrag=false); window.addEventListener('touchend',()=>isDrag=false);
+
         window.onload=()=>{loadG();initP()};
     </script>
 </body>
