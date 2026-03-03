@@ -132,7 +132,15 @@
         }
         .btn:hover::before{width:300px;height:300px}
         
-        .bottom-nav{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:20px;z-index:9999}
+.bottom-nav {
+    position: fixed;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    left: 20px;
+    z-index: 9999;
+    display: flex;         /* 가로 정렬 */
+    align-items: center;   /* 세로 중앙 정렬 */
+    gap: 12px;             /* 버튼 사이 간격 */
+}
         #ai-rank-btn{
             padding:0 25px; 
             height:50px;
@@ -398,6 +406,51 @@
         .nav{animation:fadeIn 0.8s ease-out}
         .bottom-nav{animation:fadeIn 1s ease-out 0.2s both}
         #p-cont{animation:fadeIn 1.2s ease-out 0.4s both}
+/* 그리드 모드 스타일 */
+body.grid-mode #main-scroller { overflow-y: auto; }
+body.grid-mode #sphere-scene {
+    animation: none!important; transform: none!important;
+    position: relative!important; top: 0!important; left: 0!important;
+    width: 100%!important; height: auto!important;
+    display: grid!important;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))!important;
+    gap: 15px!important; padding: 80px 20px 180px 20px!important;
+    box-sizing: border-box!important; filter: none!important;
+}
+body.grid-mode .photo-card {
+    position: relative!important; left: 0!important; top: 0!important;
+    width: 100%!important; height: auto!important;
+    aspect-ratio: 1/1; transform: none!important;
+    filter: brightness(1); box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+}
+@media (max-width: 768px) {
+    body.grid-mode #sphere-scene { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr))!important; }
+}
+
+#heart-btn {
+    width: 50px; 
+    height: 50px;
+    flex-shrink: 0;        /* 크기 고정 */
+    background: linear-gradient(135deg, var(--heart-red), #c92a49);
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: pointer; 
+    border: none;
+    box-shadow: 0 10px 25px rgba(255,77,109,.5); 
+    transition: all 0.3s;
+}
+
+/* 스캔 버튼 스타일 보정 */
+#ai-rank-btn {
+    height: 50px;          /* 하트 버튼과 높이 통일 */
+    padding: 0 25px; 
+    white-space: nowrap;   /* 텍스트 줄바꿈 방지 */
+    /* ... 나머지 기존 스타일 유지 ... */
+}
+
+#heart-btn:hover { transform: scale(1.1) translateY(-3px); }
     </style>
 </head>
 <body>
@@ -417,10 +470,14 @@
     <div id="main-scroller">
         <div id="sphere-scene"></div>
     </div>
-
-    <div class="bottom-nav">
-        <button id="ai-rank-btn">SCAN BEST PHOTO</button>
-    </div>
+<div class="bottom-nav">
+    <button id="heart-btn">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+    </button>
+    <button id="ai-rank-btn">SCAN BEST PHOTO</button>
+</div>
 
     <div id="p-cont" class="paused">
         <div class="p-header">
@@ -482,6 +539,7 @@
                     const z = radius * Math.cos(phi);
                     
                     img.style.transform = `translate3d(${x}px,${y}px,${z}px) rotateY(${theta}rad) rotateX(${phi-Math.PI/2}rad)`;
+img.dataset.sphereTransform = img.style.transform; // 이 줄을 추가하세요
                     img.innerHTML = `<img src="images/2026-02/${f}" loading="lazy">`;
                     
                     img.onclick=(e)=>{
@@ -495,7 +553,17 @@
                 });
             }catch(e){console.error(e)}
         }
-
+document.getElementById('heart-btn').onclick = () => {
+    const isGrid = document.body.classList.toggle('grid-mode');
+    const scroller = document.getElementById('main-scroller');
+    
+    cards.forEach(c => {
+        c.style.transform = isGrid ? 'none' : c.dataset.sphereTransform;
+    });
+    
+    scroller.scrollTop = 0;
+    if(audio.paused) toggleP();
+};
         document.getElementById('ai-rank-btn').onclick=()=>{
             const ov=document.getElementById('proc-ov'), bar=document.getElementById('p-bar');
             ov.style.display='flex'; bar.style.width='0%';
